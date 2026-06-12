@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Fitness Plan v6.9</title>
+<title>Fitness Plan v6.10</title>
 <meta name="app-version" content="6.7">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap');
@@ -4140,7 +4140,7 @@ function cloudSyncGenerateLink() {
   var gistId = localStorage.getItem('github_gist_id');
   if (!token || !gistId) { alert('Configura prima il sync cloud'); return; }
   var payload = btoa(token + '|' + gistId);
-  var url = 'https://claudefitnessplan.netlify.app/#sync=' + payload;
+  var url = 'https://salvatoreilarda.github.io/FitnessPlan/#sync=' + payload;
   var linkEl = document.getElementById('cloud-device-link');
   var sectionEl = document.getElementById('cloud-device-section');
   if (linkEl) linkEl.value = url;
@@ -5789,6 +5789,7 @@ function selectAiProvider(provider) {
   localStorage.setItem('ai_provider', provider);
   renderSettingsState();
   initAiChat();
+  cloudSyncSchedule();
 }
 
 function saveSettingsKey(provider) {
@@ -5802,6 +5803,7 @@ function saveSettingsKey(provider) {
   inp.value = '';
   renderSettingsState();
   initAiChat();
+  cloudSyncSchedule();
 }
 
 function selectModel(provider, model) {
@@ -8531,7 +8533,7 @@ async function stimaKcalFoto() {
       </div>
 
       <!-- Versione -->
-      <div style="margin-top:28px;text-align:center;font-size:11px;color:var(--muted);opacity:0.4;">Fitness Plan · v6.9</div>
+      <div style="margin-top:28px;text-align:center;font-size:11px;color:var(--muted);opacity:0.4;">Fitness Plan · v6.10</div>
 
     </div>
   </div>
