@@ -3,26 +3,28 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Fitness Plan v6.13</title>
+<title>Fitness Plan v6.14</title>
 <meta name="app-version" content="6.7">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap');
 
 :root {
-  --bg: #0e0e0e;
-  --surface: #161616;
-  --surface2: #1e1e1e;
-  --card: #1a1a1a;
-  --card2: #1c1c1e;
-  --border: #2a2a2a;
+  --bg: #0a0a0a;
+  --surface: #111111;
+  --surface2: #161616;
+  --card: #141414;
+  --card2: #1a1a1a;
+  --border: #1e1e1e;
   --accent: #60c8f5;
   --accent2: #ff6b35;
   --text: #f0f0f0;
-  --muted: #666;
-  --muted2: #444;
+  --muted: #555555;
+  --muted2: #333333;
   --green: #47ffb2;
   --red: #ff4444;
-  --blue: #47b2ff;
+  --blue: #60c8f5;
+  --orange: #ff6b35;
 }
 body.light-mode {
   --bg: #f2f2f7;
@@ -55,61 +57,53 @@ body {
 /* HEADER */
 .header {
   background: var(--surface);
-  border-bottom: 2px solid var(--accent);
-  padding: 20px 20px 0;
+  border-bottom: 1px solid var(--border);
+  padding: 14px 16px 12px;
   position: sticky;
   top: 0;
   z-index: 100;
 }
 
 .header h1 {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 36px;
-  letter-spacing: 3px;
-  color: var(--accent);
-  line-height: 1;
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.1;
 }
 
 .header .sub {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 10px;
+  font-size: 9px;
   color: var(--muted);
-  letter-spacing: 2px;
+  letter-spacing: 1.5px;
   text-transform: uppercase;
-  margin-bottom: 12px;
+  margin-bottom: 0;
+  line-height: 1;
 }
 
-/* NAV */
-.nav-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2px;
-  margin: 0 -20px;
-}
-
-.nav-grid button {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  padding: 10px 8px;
-  background: transparent;
-  border: none;
-  border-top: 1px solid var(--border);
+.header-greeting {
+  font-size: 9px;
   color: var(--muted);
-  cursor: pointer;
-  transition: all 0.15s;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  line-height: 1;
+  margin-bottom: 2px;
 }
 
-.nav-grid button.active {
-  color: var(--accent);
-  border-top-color: var(--accent);
-  background: var(--surface2);
+.header-streak {
+  display: inline-block;
+  background: var(--orange);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 6px;
+  margin-top: 4px;
+  letter-spacing: .3px;
 }
 
-.nav-grid button:hover:not(.active) {
-  color: var(--text);
-}
+/* NAV GRID — sempre nascosta, usiamo solo bottom nav */
+.nav-grid { display: none !important; }
 
 /* CONTENT */
 .content { padding: 20px; max-width: 700px; }
@@ -638,46 +632,49 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
   bottom: 0; left: 0; right: 0;
   background: var(--surface);
   border-top: 1px solid var(--border);
-  display: none;
+  display: block;
   z-index: 200;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
   padding-bottom: env(safe-area-inset-bottom);
 }
 .bottom-nav-inner {
   display: flex;
-  min-width: max-content;
-  padding: 0 4px;
+  justify-content: space-around;
+  padding: 0 8px;
+  max-width: 600px;
+  margin: 0 auto;
 }
 .bottom-nav button {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  padding: 8px 12px;
+  gap: 3px;
+  padding: 9px 16px 7px;
   background: none;
   border: none;
   border-top: 2px solid transparent;
   color: var(--muted);
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 8px;
-  letter-spacing: 0.5px;
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
   text-transform: uppercase;
   cursor: pointer;
   transition: color 0.15s;
   white-space: nowrap;
+  flex: 1;
 }
-.bottom-nav button .ico { font-size: 18px; margin-bottom: 1px; }
+.bottom-nav button i {
+  font-size: 20px;
+  line-height: 1;
+}
+.bottom-nav button .ico { display: none; }
 .bottom-nav button.active {
   color: var(--accent);
   border-top-color: var(--accent);
 }
-
+body { padding-bottom: 72px; }
+.content { padding: 14px; }
 @media (max-width: 640px) {
-  .nav-grid { display: none; }
-  .bottom-nav { display: block; }
-  body { padding-bottom: 72px; }
-  .content { padding: 14px; }
   .timer-display { font-size: 64px; }
 }
 
@@ -949,35 +946,144 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
 }
 .diary-del-btn:hover { background: rgba(255,68,68,0.08); }
 
+/* ═══ STYLE C OVERRIDES ═══ */
+
+/* Card generiche */
+.card, [class*="card"], .section-card {
+  background: var(--card) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 14px !important;
+}
+
+/* Section title labels stile C */
+.section-label {
+  font-size: 9px !important;
+  color: var(--muted) !important;
+  letter-spacing: 1.5px !important;
+  text-transform: uppercase !important;
+  font-weight: 700 !important;
+  margin-bottom: 8px !important;
+  display: block;
+}
+
+/* Hero card passi/stat principale */
+.hero-card {
+  background: #0d1a2e !important;
+  border: 1px solid #1a3050 !important;
+  border-radius: 14px !important;
+  padding: 14px 16px !important;
+  position: relative;
+  overflow: hidden;
+}
+.hero-card::after {
+  content: '';
+  position: absolute;
+  right: -20px; top: -20px;
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  background: rgba(96,200,245,0.05);
+  border: 1px solid rgba(96,200,245,0.08);
+  pointer-events: none;
+}
+.hero-card .hero-label {
+  font-size: 8px; color: var(--accent);
+  letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4px;
+}
+.hero-card .hero-num {
+  font-size: 36px; font-weight: 800; color: var(--text); line-height: 1;
+}
+.hero-card .hero-sub { font-size: 10px; color: #607d9a; margin-top: 4px; }
+.hero-card .hero-bar {
+  height: 3px; background: #1a3050; border-radius: 2px; margin-top: 10px;
+}
+.hero-card .hero-bar-fill {
+  height: 3px; border-radius: 2px; background: var(--accent);
+  transition: width 0.6s ease;
+}
+
+/* Stat tiles 3 colonne */
+.stat-tiles {
+  display: grid !important;
+  grid-template-columns: repeat(3,1fr) !important;
+  gap: 6px !important;
+}
+.stat-tile {
+  background: var(--card) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 10px !important;
+  border-left-width: 2px !important;
+  padding: 8px 10px !important;
+}
+.stat-tile.green { border-left-color: var(--green) !important; }
+.stat-tile.orange { border-left-color: var(--orange) !important; }
+.stat-tile.blue { border-left-color: var(--accent) !important; }
+.stat-tile .tile-val { font-size: 16px; font-weight: 700; color: var(--text); }
+.stat-tile .tile-lbl { font-size: 8px; color: var(--muted); margin-top: 2px; }
+
+/* Today list item */
+.today-item-c {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 0; border-bottom: 1px solid var(--border);
+}
+.today-item-c:last-child { border-bottom: none; }
+.today-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--border); flex-shrink: 0;
+}
+.today-dot.done { background: var(--green); }
+.today-dot.active { background: var(--accent); }
+.today-item-text { flex: 1; font-size: 11px; color: var(--muted); }
+.today-item-badge {
+  font-size: 9px; background: var(--surface2);
+  color: var(--muted); padding: 2px 7px; border-radius: 4px;
+}
+.today-item-badge.done { background: rgba(71,255,178,0.1); color: var(--green); }
+
+/* Streak badge arancione */
+.streak-badge {
+  display: inline-block;
+  background: var(--orange);
+  color: #fff;
+  font-size: 9px; font-weight: 700;
+  padding: 2px 9px; border-radius: 6px;
+}
+
+/* Bottom nav AI tab highlight */
+.bottom-nav button[data-tab="ai"].active { color: var(--green); border-top-color: var(--green); }
+
+/* Contenuto tab */
+.tab.active { display: block; }
+.content { padding: 14px; max-width: 700px; }
+
+/* Smooth fade tab */
+.tab { display: none; animation: none; }
+.tab.active { display: block; }
+
+/* Light mode adjustments */
+body.light-mode .hero-card { background: #e8f4ff !important; border-color: #b8d8f0 !important; }
+body.light-mode .hero-card .hero-label { color: var(--accent) !important; }
+body.light-mode .hero-card .hero-sub { color: #6a9ab8 !important; }
+body.light-mode .hero-card .hero-bar { background: #b8d8f0 !important; }
+body.light-mode .header-streak { background: var(--orange) !important; }
+
 </style>
 </head>
 <body>
 
 <div class="header">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-    <div>
-      <h1 onclick="showTabAll('overview', document.querySelector('.bottom-nav [data-tab=\'overview\']'))" style="margin:0;font-size:17px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;">Fitness Plan</h1>
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;">
+    <div onclick="showTabAll('overview', document.querySelector('.bottom-nav [data-tab=\'overview\']'))" style="cursor:pointer;-webkit-tap-highlight-color:transparent;">
+      <div class="header-greeting" id="header-greeting">BENTORNATO</div>
+      <h1 id="header-name" style="margin:0;">Fitness Plan</h1>
+      <div class="header-streak" id="header-streak" style="display:none;"></div>
     </div>
-    <div style="display:flex;gap:8px;align-items:center;">
-
-      <button onclick="showTab('ai',null)" title="AI Claude" style="background:none;border:none;cursor:pointer;padding:4px;touch-action:manipulation;">
-        <svg width="26" height="26" viewBox="0 0 41 41" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M37.532 16.87a9.963 9.963 0 0 0-.856-8.184 10.078 10.078 0 0 0-10.855-4.835 9.964 9.964 0 0 0-7.504-3.346 10.079 10.079 0 0 0-9.612 6.977 9.967 9.967 0 0 0-6.664 4.834 10.08 10.08 0 0 0 1.24 11.817 9.965 9.965 0 0 0 .856 8.185 10.079 10.079 0 0 0 10.855 4.835 9.965 9.965 0 0 0 7.504 3.345 10.078 10.078 0 0 0 9.617-6.981 9.967 9.967 0 0 0 6.663-4.834 10.079 10.079 0 0 0-1.244-11.813zM22.498 37.886a7.474 7.474 0 0 1-4.799-1.735c.061-.033.168-.091.237-.134l7.964-4.6a1.294 1.294 0 0 0 .655-1.134V19.054l3.366 1.944a.12.12 0 0 1 .066.092v9.299a7.505 7.505 0 0 1-7.49 7.496zM6.392 31.006a7.471 7.471 0 0 1-.894-5.023c.06.036.162.099.237.141l7.964 4.6a1.297 1.297 0 0 0 1.308 0l9.724-5.614v3.888a.12.12 0 0 1-.048.103L16.4 34.523a7.504 7.504 0 0 1-10.008-3.517zm-2.32-17.725a7.47 7.47 0 0 1 3.9-3.287c0 .068-.004.19-.004.274v9.201a1.294 1.294 0 0 0 .654 1.132l9.723 5.614-3.366 1.944a.12.12 0 0 1-.114.012L7.044 23.86a7.504 7.504 0 0 1-2.972-10.578zm27.658 6.437l-9.724-5.615 3.367-1.943a.121.121 0 0 1 .114-.012l7.82 4.515a7.504 7.504 0 0 1-1.158 13.528v-9.476a1.293 1.293 0 0 0-.42-.997zm3.34-5.043c-.059-.037-.162-.099-.236-.141l-7.965-4.6a1.298 1.298 0 0 0-1.308 0l-9.723 5.614v-3.888a.12.12 0 0 1 .048-.103l7.683-4.436a7.504 7.504 0 0 1 11.501 7.554zm-21.063 6.929l-3.367-1.944a.12.12 0 0 1-.065-.092v-9.299a7.504 7.504 0 0 1 12.293-5.756 6.94 6.94 0 0 0-.236.134l-7.965 4.6a1.294 1.294 0 0 0-.654 1.132l-.006 11.225zm1.829-3.943l4.33-2.501 4.332 2.497v4.998l-4.331 2.5-4.331-2.5V18.661z" fill="#cc785c"/></svg>
+    <div style="display:flex;gap:4px;align-items:center;padding-top:2px;">
+      <button id="theme-btn" onclick="toggleTheme()" title="Tema" style="background:none;border:none;cursor:pointer;padding:6px;touch-action:manipulation;font-size:18px;line-height:1;color:var(--muted);">🌙</button>
+      <span id="cloud-sync-badge" onclick="openSettings()" title="Cloud sync" style="font-size:18px;cursor:pointer;line-height:1;color:var(--muted);padding:6px;">☁️</span>
+      <button onclick="openSettings()" title="Impostazioni" style="background:none;border:none;cursor:pointer;padding:6px;touch-action:manipulation;color:var(--muted);">
+        <i class="ti ti-settings" style="font-size:20px;"></i>
       </button>
-      <button onclick="showTab('profilo',null)" title="Profilo" style="background:none;border:none;cursor:pointer;padding:4px;touch-action:manipulation;">
-        <div id="header-avatar" style="width:32px;height:32px;border-radius:50%;background:var(--surface);border:1.5px solid var(--border);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:18px;">&#128100;</div>
-      </button>
-      <button id="theme-btn" onclick="toggleTheme()" title="Tema chiaro/scuro" style="background:none;border:none;cursor:pointer;padding:4px;touch-action:manipulation;font-size:20px;line-height:1;">🌙</button>
-      <span id="cloud-sync-badge" onclick="showTab('profilo',null);setTimeout(function(){showProfileTab('backup',document.getElementById('ptab-backup'));},80);" title="Cloud sync" style="font-size:16px;cursor:pointer;line-height:1;color:var(--muted);">☁️</span>
-      <button onclick="openSettings()" title="Impostazioni" style="background:none;border:none;cursor:pointer;padding:4px;touch-action:manipulation;font-size:20px;line-height:1;">⚙️</button>
     </div>
-  </div>
-  <div class="nav-grid">
-    <button class="active" onclick="showTab('overview',this)">Home</button>
-    <button onclick="showTab('circuito',this)">Stretching</button>
-    <button onclick="showTab('boxe',this)">Sport</button>
-    <button onclick="showTab('sala',this)">Sala</button>
-    <button onclick="showTab('fasi',this)">Fasi</button>
-    <button onclick="showTab('equip',this)">Equip.</button>
   </div>
 </div>
 
@@ -986,6 +1092,8 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
 <!-- OVERVIEW -->
 <div class="tab active" id="tab-overview">
 
+  <!-- Hero card passi — popolata da renderHomeHero() -->
+  <div id="home-hero-inject" style="margin-bottom:10px;"></div>
 
   <div class="today-banner" id="todayBanner">
     <div class="today-icon" id="todayIcon">⏳</div>
@@ -3450,6 +3558,7 @@ document.addEventListener('DOMContentLoaded', function() {
   renderWeekDays();
   renderStretchingState();
   initStepsDate();
+  renderHomeHero();
   renderStepsWidget();
   renderStats();
   initProfile();
@@ -3519,6 +3628,7 @@ function saveSteps() {
   localStorage.setItem('dailySteps', JSON.stringify(steps));
   document.getElementById('steps-input').value = '';
   renderStepsWidget();
+  renderHomeHero();
   renderStepsStorico();
   renderStats();
   if(typeof renderScorecard==='function') renderScorecard();
@@ -3591,6 +3701,44 @@ function renderStepsStorico() {
     row.appendChild(right);
     el.appendChild(row);
   });
+}
+
+function renderHomeHero() {
+  var el = document.getElementById('home-hero-inject');
+  if (!el) return;
+  var steps = JSON.parse(localStorage.getItem('dailySteps') || '[]');
+  var today = new Date().toISOString().split('T')[0];
+  var todayData = steps.find(function(s){ return s.date === today; });
+  var count = todayData ? todayData.steps : 0;
+  var goal = 8000;
+  var pct = Math.min(100, Math.round((count / goal) * 100));
+  var mancano = Math.max(0, goal - count);
+  var profile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+  var peso = profile.peso ? profile.peso + ' kg' : '—';
+  var sessioni = (function(){
+    var s = 0; var d = new Date();
+    for (var i = 0; i < 7; i++) {
+      var k = 'workout_session_' + new Date(d.getFullYear(), d.getMonth(), d.getDate()-i).toISOString().split('T')[0];
+      if (localStorage.getItem(k)) s++;
+    }
+    return s;
+  })();
+  var sonno = (function(){
+    var b = JSON.parse(localStorage.getItem('benessere_' + today) || 'null');
+    return b && b.sonno ? b.sonno + 'h' : '—';
+  })();
+  el.innerHTML =
+    '<div class="hero-card">' +
+      '<div class="hero-label">PASSI OGGI</div>' +
+      '<div class="hero-num">' + count.toLocaleString('it') + '</div>' +
+      '<div class="hero-sub">' + (count >= goal ? '✓ Obiettivo raggiunto!' : 'mancano ' + mancano.toLocaleString('it') + ' al goal') + '</div>' +
+      '<div class="hero-bar"><div class="hero-bar-fill" style="width:' + pct + '%;"></div></div>' +
+    '</div>' +
+    '<div class="stat-tiles" style="margin-top:8px;">' +
+      '<div class="stat-tile green"><div class="tile-val">' + sessioni + '</div><div class="tile-lbl">sessioni / sett</div></div>' +
+      '<div class="stat-tile orange"><div class="tile-val">' + peso + '</div><div class="tile-lbl">peso</div></div>' +
+      '<div class="stat-tile blue"><div class="tile-val">' + sonno + '</div><div class="tile-lbl">sonno</div></div>' +
+    '</div>';
 }
 
 function renderStepsWidget() {
@@ -4851,12 +4999,60 @@ function loadHomeOrder() {
 
 // Update header avatar when profile photo changes
 function _updateHeaderAvatar() {
-  const photo = localStorage.getItem('profilePhoto');
-  const av = document.getElementById('header-avatar');
-  if (!av) return;
-  if (photo) {
-    av.innerHTML = '<img src="' + photo + '" style="width:100%;height:100%;object-fit:cover;"/>';
+  var profile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+  var nome = (profile.nome || '').split(' ')[0];
+  var greetingEl = document.getElementById('header-greeting');
+  var nameEl = document.getElementById('header-name');
+  var streakEl = document.getElementById('header-streak');
+  var ore = new Date().getHours();
+  var saluto = ore < 12 ? 'BUONGIORNO' : ore < 18 ? 'BUON POMERIGGIO' : 'BUONASERA';
+  if (greetingEl) greetingEl.textContent = saluto;
+  if (nameEl) nameEl.textContent = nome || 'Fitness Plan';
+  if (streakEl) {
+    var streak = _calcStreak();
+    if (streak > 1) { streakEl.textContent = '🔥 ' + streak + ' giorni streak'; streakEl.style.display = 'inline-block'; }
+    else { streakEl.style.display = 'none'; }
   }
+}
+
+function _calcStreak() {
+  var streak = 0;
+  var d = new Date();
+  for (var i = 0; i < 60; i++) {
+    d.setDate(d.getDate() - (i === 0 ? 0 : 1));
+    var key = 'weekActivities_' + d.toISOString().slice(0,10).replace(/-/g,'').slice(0,8);
+    var wk = 'workout_session_' + d.toISOString().slice(0,10);
+    var stretching = 'stretching_' + d.toISOString().slice(0,10);
+    if (localStorage.getItem(wk) || localStorage.getItem(stretching)) streak++;
+    else if (i > 0) break;
+  }
+  return streak;
+}
+
+function _openMoreMenu(btn) {
+  var menu = document.getElementById('more-menu-overlay');
+  if (menu) { menu.remove(); return; }
+  var overlay = document.createElement('div');
+  overlay.id = 'more-menu-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:500;background:rgba(0,0,0,0.6);display:flex;align-items:flex-end;';
+  overlay.onclick = function(e){ if(e.target===overlay) overlay.remove(); };
+  var items = [
+    {label:'Sala pesi', icon:'ti-barbell', tab:'sala'},
+    {label:'Fasi programma', icon:'ti-chart-line', tab:'fasi'},
+    {label:'Attrezzatura', icon:'ti-backpack', tab:'equip'},
+    {label:'Alimentazione', icon:'ti-salad', tab:'alim'},
+    {label:'Profilo', icon:'ti-user', tab:'profilo'},
+    {label:'Benessere', icon:'ti-heart-rate-monitor', tab:'benessere'},
+  ];
+  var sheet = document.createElement('div');
+  sheet.style.cssText = 'background:var(--surface);border-radius:20px 20px 0 0;width:100%;padding:16px 16px calc(16px + env(safe-area-inset-bottom));';
+  sheet.innerHTML = '<div style="width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px;"></div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
+    items.map(function(it){
+      return '<button onclick="showTab(\''+it.tab+'\',null);document.getElementById(\'more-menu-overlay\').remove();_syncBottomNav(\''+it.tab+'\');" style="display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px;color:var(--text);font-size:13px;font-weight:600;cursor:pointer;touch-action:manipulation;"><i class="ti '+it.icon+'" style="font-size:20px;color:var(--accent);"></i>'+it.label+'</button>';
+    }).join('') + '</div>';
+  overlay.appendChild(sheet);
+  document.body.appendChild(overlay);
 }
 
 
@@ -6098,7 +6294,7 @@ async function sendAiMessage() {
       });
       arr.sort(function(a,b){ return a.date.localeCompare(b.date); });
       localStorage.setItem('dailySteps', JSON.stringify(arr));
-      if (typeof renderStepsWidget === 'function') renderStepsWidget();
+      if (typeof renderStepsWidget === 'function') { renderStepsWidget(); renderHomeHero(); }
       if (typeof renderStats === 'function') renderStats();
       if (typeof renderScorecard === 'function') renderScorecard();
       // Chiedi solo commento a Federico
@@ -8400,24 +8596,21 @@ async function stimaKcalFoto() {
 </script>
 
 <nav class="bottom-nav">
-    <div class="bottom-nav-inner">
+  <div class="bottom-nav-inner">
     <button class="active" onclick="showTabAll('overview',this)" data-tab="overview">
-      <span class="ico">&#127968;</span>Home
-    </button>
-    <button onclick="showTabAll('circuito',this)" data-tab="circuito">
-      <span class="ico">&#129496;</span>Stretching
+      <i class="ti ti-home"></i>Home
     </button>
     <button onclick="showTabAll('boxe',this)" data-tab="boxe">
-      <span class="ico">&#129354;</span>Sport
+      <i class="ti ti-barbell"></i>Sport
     </button>
-    <button onclick="showTabAll('sala',this)" data-tab="sala">
-      <span class="ico">&#127947;</span>Sala
+    <button onclick="showTabAll('circuito',this)" data-tab="circuito">
+      <i class="ti ti-run"></i>Stretch
     </button>
-    <button onclick="showTabAll('fasi',this)" data-tab="fasi">
-      <span class="ico">&#128200;</span>Fasi
+    <button onclick="showTab('ai',this)" data-tab="ai">
+      <i class="ti ti-robot"></i>AI
     </button>
-    <button onclick="showTabAll('equip',this)" data-tab="equip">
-      <span class="ico">&#127936;</span>Equip.
+    <button onclick="_openMoreMenu(this)" data-tab="more">
+      <i class="ti ti-dots"></i>Altro
     </button>
   </div>
 </nav>
@@ -8559,7 +8752,7 @@ async function stimaKcalFoto() {
       </div>
 
       <!-- Versione -->
-      <div style="margin-top:28px;text-align:center;font-size:11px;color:var(--muted);opacity:0.4;">Fitness Plan · v6.13</div>
+      <div style="margin-top:28px;text-align:center;font-size:11px;color:var(--muted);opacity:0.4;">Fitness Plan · v6.14</div>
 
     </div>
   </div>
