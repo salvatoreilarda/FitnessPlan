@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Fitness Plan v6.12</title>
+<title>Fitness Plan v6.13</title>
 <meta name="app-version" content="6.7">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap');
@@ -3983,6 +3983,7 @@ function renderAssenzePagella(list) {
 var _CLOUD_EXCLUDE = ['github_token', 'github_gist_id', '_lastCloudSync', '_lastAutoSave'];
 var _cloudSaveTimer = null;
 var _cloudReady = false; // true solo dopo aver caricato dal cloud almeno una volta
+var _cloudSyncLoading = false; // true durante cloudSyncLoad per non triggherare save in loop
 
 function _updateSyncBadge(state) {
   var badge = document.getElementById('cloud-sync-badge');
@@ -4023,6 +4024,7 @@ async function cloudSyncLoad() {
     var data = JSON.parse(file.content);
     // Controlla se ci sono differenze rispetto al locale
     var changed = false;
+    _cloudSyncLoading = true;
     Object.keys(data).forEach(function(k) {
       if (!_CLOUD_EXCLUDE.includes(k) && localStorage.getItem(k) !== data[k]) {
         localStorage.setItem(k, data[k]);
@@ -4030,6 +4032,7 @@ async function cloudSyncLoad() {
       }
     });
     localStorage.setItem('_lastCloudSync', new Date().toISOString());
+    _cloudSyncLoading = false;
     _cloudReady = true; // ora possiamo salvare senza rischio di sovrascrivere
     if (changed) {
       sessionStorage.setItem('_syncReloaded', '1');
@@ -4085,6 +4088,17 @@ function cloudSyncSchedule() {
   if (_cloudSaveTimer) clearTimeout(_cloudSaveTimer);
   _cloudSaveTimer = setTimeout(function() { cloudSyncSave(); }, 8000);
 }
+
+// Intercetta OGNI localStorage.setItem → salva nel cloud entro 8 secondi
+(function() {
+  var _orig = localStorage.setItem.bind(localStorage);
+  localStorage.setItem = function(key, value) {
+    _orig(key, value);
+    if (!_cloudSyncLoading && key && !_CLOUD_EXCLUDE.includes(key)) {
+      cloudSyncSchedule();
+    }
+  };
+})();
 
 async function cloudSyncSetup() {
   var token = (document.getElementById('cloud-token-input').value || '').trim();
@@ -8545,7 +8559,7 @@ async function stimaKcalFoto() {
       </div>
 
       <!-- Versione -->
-      <div style="margin-top:28px;text-align:center;font-size:11px;color:var(--muted);opacity:0.4;">Fitness Plan · v6.12</div>
+      <div style="margin-top:28px;text-align:center;font-size:11px;color:var(--muted);opacity:0.4;">Fitness Plan · v6.13</div>
 
     </div>
   </div>
