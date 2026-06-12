@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Fitness Plan v7.7</title>
+<title>Fitness Plan v7.8</title>
 <meta name="app-version" content="6.7">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <style>
@@ -1109,6 +1109,11 @@ body.light-mode .header-streak { background: var(--orange) !important; }
     </div>
   </div>
   </div><!-- /home-section scorecard -->
+
+  <!-- ── BENESSERE OGGI ── -->
+  <div class="home-section" data-id="benessere-oggi">
+    <div id="home-ben-card" style="margin:10px 12px 0;"></div>
+  </div>
 
   <!-- ── ULTIMI ALLENAMENTI ── -->
   <div class="home-section" data-id="recenti">
@@ -3569,6 +3574,7 @@ document.addEventListener('DOMContentLoaded', function() {
   renderStats();
   initProfile();
   renderScorecard();
+  renderHomeBenessereCard();
   renderRecentWorkouts();
   renderObiettivi();
   initBenessere();
@@ -4291,7 +4297,7 @@ async function cloudSyncSetup() {
         if (st) { st.textContent = '✅ Tutti i dati caricati · @' + user.login; }
         _renderCloudSyncUI();
         // Ricarica UI con i nuovi dati
-        renderStats(); renderScorecard(); renderRecentWorkouts(); renderEquip(); initBenessere(); _aiLoadSession();
+        renderStats(); renderScorecard(); renderHomeBenessereCard(); renderRecentWorkouts(); renderEquip(); initBenessere(); _aiLoadSession();
       } else { await cloudSyncSave(); _renderCloudSyncUI(); }
     } else {
       if (st) { st.textContent = '⏳ Primo accesso — salvo i dati...'; }
@@ -4343,7 +4349,7 @@ function _cloudSyncCheckHash() {
     if (st) { st.textContent = '⏳ Collegamento in corso...'; st.style.color = 'var(--accent)'; }
     cloudSyncLoad().then(function(ok) {
       if (ok) {
-        renderStats(); renderScorecard(); renderRecentWorkouts(); renderEquip(); initBenessere(); _aiLoadSession();
+        renderStats(); renderScorecard(); renderHomeBenessereCard(); renderRecentWorkouts(); renderEquip(); initBenessere(); _aiLoadSession();
         _renderCloudSyncUI();
         var st2 = _cloudSyncStatusEl();
         if (st2) { st2.textContent = '✅ Dispositivo collegato — dati caricati!'; st2.style.color = 'var(--green)'; }
@@ -5652,6 +5658,7 @@ const AI_TOOLS = [
   { type:'function', function:{ name:'save_peso', description:'Salva il peso corporeo di Salvatore', parameters:{ type:'object', properties:{ date:{type:'string',description:'Data YYYY-MM-DD'}, kg:{anyOf:[{type:'number'},{type:'string'}],description:'Peso in kg, es: 78.5'} }, required:['date','kg'] } } },
   { type:'function', function:{ name:'save_meal_kcal', description:'Salva la stima delle chilocalorie per ogni pasto di una giornata. Usa questo tool quando Salvatore chiede di stimare le kcal dei pasti o quando vengono descritti i pasti e serve calcolare il totale calorico.', parameters:{ type:'object', properties:{ date:{type:'string',description:'Data YYYY-MM-DD'}, colazione:{anyOf:[{type:'number'},{type:'string'}],description:'Kcal stimate per la colazione'}, pranzo:{anyOf:[{type:'number'},{type:'string'}],description:'Kcal stimate per il pranzo'}, cena:{anyOf:[{type:'number'},{type:'string'}],description:'Kcal stimate per la cena'}, spuntini:{anyOf:[{type:'number'},{type:'string'}],description:'Kcal stimate per spuntini/snack'} }, required:['date'] } } },
   { type:'function', function:{ name:'save_absence', description:'Registra un\'assenza o un giorno saltato con la motivazione. Usa quando Salvatore dice che ha saltato per lavoro, viaggio, malattia, impegni ecc.', parameters:{ type:'object', properties:{ date:{type:'string',description:'Data YYYY-MM-DD'}, tipo:{type:'string',enum:['sport','sala','circuito','generico'],description:'Tipo di attività saltata'}, note:{type:'string',description:'Motivazione assenza, es: Viaggio a Roma, Lavoro, Malattia'} }, required:['date','note'] } } },
+  { type:'function', function:{ name:'save_benessere', description:'Salva il benessere di Salvatore: energia percepita, dolore al ginocchio e/o alla spalla. Usa quando descrive come si sente fisicamente o energeticamente.', parameters:{ type:'object', properties:{ date:{type:'string',description:'Data YYYY-MM-DD'}, energia:{anyOf:[{type:'number'},{type:'string'}],description:'Livello energia 1-5: 1=esausto 2=stanco 3=normale 4=buono 5=ottimo'}, ginocchio:{anyOf:[{type:'number'},{type:'string'}],description:'Dolore ginocchio 0-5: 0=nessuno 1-2=lieve 3-4=moderato 5=forte'}, spalla:{anyOf:[{type:'number'},{type:'string'}],description:'Dolore spalla 0-5: 0=nessuno 1-2=lieve 3-4=moderato 5=forte'} }, required:['date'] } } },
   { type:'function', function:{ name:'save_farmaco_dose', description:'Registra che Salvatore ha preso un farmaco oggi o in una data specifica. Usa quando dice "ho preso [farmaco]", "stamattina ho preso [farmaco]", "registra che ho preso [farmaco]".', parameters:{ type:'object', properties:{ name:{type:'string',description:'Nome del farmaco, es: Seki Sciroppo, Tachipirina, Brufen'}, dosaggio:{type:'string',description:'Dose presa, es: 10ml, 1 compressa, 500mg. Se non specificata usa "dose standard".'}, date:{type:'string',description:'Data YYYY-MM-DD'}, note:{type:'string',description:'Note opzionali, es: per febbre, per tosse'} }, required:['name','date'] } } }
 ];
 
@@ -5866,7 +5873,17 @@ function _aiSystemPrompt() {
 'Esempi:\n'+
 '- "ho preso il Seki" → save_farmaco_dose(name="Seki Sciroppo", dosaggio="dose standard", date=oggi)\n'+
 '- "stamattina 1 Tachipirina 500mg" → save_farmaco_dose(name="Tachipirina", dosaggio="500mg", date=oggi)\n'+
-'- "ieri sera ho preso il Brufen" → save_farmaco_dose(name="Brufen", dosaggio="dose standard", date=ieri)';
+'- "ieri sera ho preso il Brufen" → save_farmaco_dose(name="Brufen", dosaggio="dose standard", date=ieri)\n\n'+
+'═══ BENESSERE ═══\n'+
+'Usa save_benessere quando Salvatore descrive come si sente:\n'+
+'- Energia: "mi sento stanco/spossato" → energia=1-2 | "normale" → 3 | "bene/carico" → 4-5\n'+
+'- Ginocchio: "ginocchio ok" → 0 | "fastidio lieve" → 1-2 | "dolore" → 3-4 | "forte dolore" → 5\n'+
+'- Spalla: stessa scala del ginocchio\n'+
+'- Salva solo i campi menzionati, non inventare valori per i campi non citati\n'+
+'Esempi:\n'+
+'- "oggi mi sento stanco" → save_benessere(date=oggi, energia=2)\n'+
+'- "ginocchio ok, spalla un po\' fastidiosa" → save_benessere(date=oggi, ginocchio=0, spalla=2)\n'+
+'- "mi sento al top" → save_benessere(date=oggi, energia=5)';
 }
 
 function _aiGetConfig() {
@@ -6544,6 +6561,24 @@ function _aiExecTool(name, args) {
     return '🍽️ Kcal stimate — Col: ' + (args.colazione||0) + ' | Pra: ' + (args.pranzo||0) + ' | Cen: ' + (args.cena||0) + ' | Spu: ' + (args.spuntini||0) + ' kcal · Totale: ' + kcalData.totale + ' kcal';
   }
 
+  if (name === 'save_benessere') {
+    var benKey = 'benessere_' + args.date;
+    var benData = JSON.parse(localStorage.getItem(benKey) || '{}');
+    if (args.energia  !== undefined) { var ev = parseInt(args.energia);  if (ev >= 1 && ev <= 5) benData.energia  = ev; }
+    if (args.ginocchio !== undefined) { var gv = parseInt(args.ginocchio); if (gv >= 0 && gv <= 5) benData.ginocchio = gv; }
+    if (args.spalla   !== undefined) { var sv = parseInt(args.spalla);   if (sv >= 0 && sv <= 5) benData.spalla   = sv; }
+    localStorage.setItem(benKey, JSON.stringify(benData));
+    if (typeof _renderBenessereBtns === 'function') _renderBenessereBtns();
+    if (typeof renderBenessereTab === 'function' && document.getElementById('tab-benessere') && document.getElementById('tab-benessere').classList.contains('active')) renderBenessereTab();
+    if (typeof renderHomeBenessereCard === 'function') renderHomeBenessereCard();
+    var benParts = [];
+    var emojiE = ['','😴','😕','😐','😊','🔥'];
+    if (benData.energia  !== undefined) benParts.push('Energia: ' + (emojiE[benData.energia] || benData.energia));
+    if (benData.ginocchio !== undefined) benParts.push('Ginocchio: ' + benData.ginocchio + '/5');
+    if (benData.spalla   !== undefined) benParts.push('Spalla: '   + benData.spalla   + '/5');
+    return '💚 Benessere salvato — ' + benParts.join(' · ');
+  }
+
   if (name === 'save_absence') {
     var absDate = args.date;
     var absTipo = args.tipo || 'generico';
@@ -6815,6 +6850,37 @@ function scorecardChipNav(key) {
     if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) scorecardNav(dx < 0 ? -1 : 1);
   }, {passive:true});
 })();
+
+function renderHomeBenessereCard() {
+  var el = document.getElementById('home-ben-card');
+  if (!el) return;
+  var today = localDateStr(new Date());
+  var data = JSON.parse(localStorage.getItem('benessere_' + today) || '{}');
+  var emojiE = ['','😴','😕','😐','😊','🔥'];
+  var hasData = data.energia !== undefined || data.ginocchio !== undefined || data.spalla !== undefined;
+
+  var energiaHtml = data.energia !== undefined
+    ? '<span style="font-size:22px;">' + (emojiE[data.energia] || '—') + '</span>'
+    : '<span style="font-size:16px;color:var(--muted);">—</span>';
+
+  function painDot(val) {
+    if (val === undefined) return '<span style="font-size:12px;color:var(--muted);">—</span>';
+    var c = val === 0 ? 'var(--green)' : val <= 2 ? '#ff9f0a' : 'var(--accent2)';
+    return '<span style="font-size:13px;font-weight:800;color:' + c + ';">' + val + '</span>';
+  }
+
+  el.innerHTML = '<div style="background:var(--card);border-radius:14px;padding:12px 14px;border:1px solid var(--border);display:flex;align-items:center;gap:12px;">'
+    + '<div style="flex:1;">'
+    + '<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;">Benessere oggi</div>'
+    + '<div style="display:flex;align-items:center;gap:14px;">'
+    + '<div style="text-align:center;">' + energiaHtml + '<div style="font-size:9px;color:var(--muted);margin-top:2px;">Energia</div></div>'
+    + '<div style="text-align:center;">' + painDot(data.ginocchio) + '<div style="font-size:9px;color:var(--muted);margin-top:2px;">Ginocchio</div></div>'
+    + '<div style="text-align:center;">' + painDot(data.spalla) + '<div style="font-size:9px;color:var(--muted);margin-top:2px;">Spalla</div></div>'
+    + (hasData ? '' : '<div style="font-size:12px;color:var(--muted);font-style:italic;">Non ancora registrato</div>')
+    + '</div></div>'
+    + '<button onclick="showTab(\'benessere\',null);_syncBottomNav(\'benessere\');" style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:8px 12px;font-size:12px;font-weight:700;color:var(--accent);cursor:pointer;touch-action:manipulation;white-space:nowrap;flex-shrink:0;">Registra →</button>'
+    + '</div>';
+}
 
 function renderScorecard() {
   var grid = document.getElementById('scorecard-grid');
@@ -7290,7 +7356,27 @@ function renderPeso() {
   var sign = delta > 0 ? '+' : '';
   var minV = Math.min.apply(null, vals), maxV = Math.max.apply(null, vals);
 
-  statsEl.innerHTML = [
+  // BMI card
+  var profile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+  var altezza = parseFloat(profile.altezza);
+  var bmiHtml = '';
+  if (altezza > 0) {
+    var bmi = last / Math.pow(altezza / 100, 2);
+    var bmiRound = bmi.toFixed(1);
+    var bmiCat, bmiColor;
+    if (bmi < 18.5)      { bmiCat = 'Sottopeso'; bmiColor = 'var(--blue)'; }
+    else if (bmi < 25)   { bmiCat = 'Normale';   bmiColor = 'var(--green)'; }
+    else if (bmi < 30)   { bmiCat = 'Sovrappeso';bmiColor = '#ff9f0a'; }
+    else                 { bmiCat = 'Obesità';   bmiColor = 'var(--accent2)'; }
+    bmiHtml = '<div style="background:var(--card);border-radius:12px;padding:10px 14px;border:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">'
+      + '<div><div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">BMI</div>'
+      + '<div style="font-size:22px;font-weight:800;color:' + bmiColor + ';margin-top:2px;">' + bmiRound + '</div></div>'
+      + '<div style="text-align:right;"><div style="font-size:13px;font-weight:700;color:' + bmiColor + ';">' + bmiCat + '</div>'
+      + '<div style="font-size:10px;color:var(--muted);margin-top:2px;">su ' + altezza + ' cm altezza</div></div>'
+      + '</div>';
+  }
+
+  statsEl.innerHTML = bmiHtml + [
     { label: 'Attuale', val: last + ' kg', color: 'var(--accent)' },
     { label: 'Variazione', val: sign + delta + ' kg', color: parseFloat(delta) <= 0 ? 'var(--green)' : 'var(--accent2)' },
     { label: 'Min / Max', val: minV + ' / ' + maxV, color: 'var(--text)' }
@@ -9188,7 +9274,7 @@ async function stimaKcalFoto() {
       </div>
 
       <!-- Versione -->
-      <div style="margin-top:28px;text-align:center;font-size:11px;color:var(--muted);opacity:0.4;">Fitness Plan · v7.7</div>
+      <div style="margin-top:28px;text-align:center;font-size:11px;color:var(--muted);opacity:0.4;">Fitness Plan · v7.8</div>
 
     </div>
   </div>
