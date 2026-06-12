@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Fitness Plan v6.10</title>
+<title>Fitness Plan v6.12</title>
 <meta name="app-version" content="6.7">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap');
@@ -4127,6 +4127,7 @@ async function cloudSyncSetup() {
       } else { await cloudSyncSave(); _renderCloudSyncUI(); }
     } else {
       if (st) { st.textContent = '⏳ Primo accesso — salvo i dati...'; }
+      _cloudReady = true; // primo accesso: nessun gist da cui caricare, ok a salvare
       await cloudSyncSave();
       _renderCloudSyncUI();
     }
@@ -4232,8 +4233,18 @@ function importData(input) {
       var data = JSON.parse(e.target.result);
       var count = 0;
       Object.keys(data).forEach(function(k) { localStorage.setItem(k, data[k]); count++; });
-      if (st) { st.style.color = 'var(--green)'; st.textContent = '✅ Importati ' + count + ' elementi — ricarico...'; }
-      setTimeout(function(){ location.reload(); }, 1500);
+      if (st) { st.style.color = 'var(--green)'; st.textContent = '✅ Importati ' + count + ' elementi...'; }
+      // Se il cloud sync è attivo, salva prima di ricaricare (evita che il vecchio gist sovrascriva i dati appena importati)
+      if (localStorage.getItem('github_token')) {
+        _cloudReady = true;
+        if (st) st.textContent = '✅ Importati ' + count + ' elementi — salvo nel cloud...';
+        cloudSyncSave().then(function() {
+          if (st) st.textContent = '✅ Salvato nel cloud — ricarico...';
+          setTimeout(function(){ location.reload(); }, 800);
+        }).catch(function() { setTimeout(function(){ location.reload(); }, 1500); });
+      } else {
+        setTimeout(function(){ location.reload(); }, 1500);
+      }
     } catch(err) {
       if (st) { st.style.color = '#ff6b6b'; st.textContent = '❌ File non valido.'; }
     }
@@ -5710,6 +5721,7 @@ async function settingsCloudSetup() {
       if (loaded) { renderStats(); renderScorecard(); renderRecentWorkouts(); renderEquip(); initBenessere(); _aiLoadSession(); }
       else { await cloudSyncSave(); }
     } else {
+      _cloudReady = true; // primo accesso: nessun gist da cui caricare, ok a salvare
       await cloudSyncSave();
     }
     _renderSettingsCloudUI();
@@ -8533,7 +8545,7 @@ async function stimaKcalFoto() {
       </div>
 
       <!-- Versione -->
-      <div style="margin-top:28px;text-align:center;font-size:11px;color:var(--muted);opacity:0.4;">Fitness Plan · v6.10</div>
+      <div style="margin-top:28px;text-align:center;font-size:11px;color:var(--muted);opacity:0.4;">Fitness Plan · v6.12</div>
 
     </div>
   </div>
