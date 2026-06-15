@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Fitness Plan v7.17</title>
+<title>Fitness Plan v7.18</title>
 <meta name="app-version" content="6.7">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <style>
@@ -3779,26 +3779,9 @@ async function syncHealthKit() {
 // Legge praticamente tutto: passi, peso, sonno, battiti, ossigenazione,
 // attività sessuale, ecc. e li salva in localStorage.
 var _healthFullSyncing = false;
-// Banner diagnostico PERSISTENTE (DEBUG — rimuovere a fine diagnosi)
-// Resta in alto ~30s e accumula i messaggi, così c'è tempo di fotografarlo.
+// Log silenzioso HealthKit (la diagnostica a schermo è stata rimossa dopo il debug)
 function _hkToast(msg, color) {
-  var b = document.getElementById('hk-debug-banner');
-  if (!b) {
-    b = document.createElement('div');
-    b.id = 'hk-debug-banner';
-    b.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#0b1f33;color:#bfe;padding:calc(8px + env(safe-area-inset-top)) 12px 8px;font-size:11px;line-height:1.5;z-index:999999;max-height:45vh;overflow:auto;font-family:-apple-system,monospace;border-bottom:2px solid #0a84ff;';
-    b.onclick = function(){ b.remove(); };
-    document.body.appendChild(b);
-    var hint = document.createElement('div');
-    hint.style.cssText = 'opacity:.6;font-size:9px;margin-bottom:4px;';
-    hint.textContent = 'DEBUG HealthKit (tocca per chiudere)';
-    b.appendChild(hint);
-    setTimeout(function(){ if(b) b.remove(); }, 30000);
-  }
-  var line = document.createElement('div');
-  if (color === '#4a1010') line.style.color = '#ff8a8a';
-  line.textContent = '• ' + msg;
-  b.appendChild(line);
+  try { console.log('[HealthKit] ' + msg); } catch(e) {}
 }
 
 // Chiama il plugin nativo HealthFull anche da pagina remota (no registerPlugin):
