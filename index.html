@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Fitness Plan v7.13</title>
+<title>Fitness Plan v7.14</title>
 <meta name="app-version" content="6.7">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <style>
@@ -3779,17 +3779,33 @@ async function syncHealthKit() {
 // Legge praticamente tutto: passi, peso, sonno, battiti, ossigenazione,
 // attività sessuale, ecc. e li salva in localStorage.
 var _healthFullSyncing = false;
+// Toast diagnostico riusabile (DEBUG — rimuovere a fine diagnosi)
+function _hkToast(msg, color) {
+  var t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:160px;left:50%;transform:translateX(-50%);background:'+(color||'#222')+';color:#fff;padding:10px 18px;border-radius:12px;font-size:12px;z-index:99999;max-width:92vw;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,.5);';
+  t.textContent = msg; document.body.appendChild(t);
+  setTimeout(function(){ t.remove(); }, 8000);
+}
+
 async function syncHealthFull() {
   try {
     var Cap = window.Capacitor;
+    // DEBUG stadio 1
+    var nat = (Cap && typeof Cap.isNativePlatform === 'function') ? Cap.isNativePlatform() : 'n/a';
+    _hkToast('① Cap=' + (Cap?'SI':'NO') + ' · native=' + nat, '#1a3a5a');
     if (!Cap || (typeof Cap.isNativePlatform === 'function' && !Cap.isNativePlatform())) return;
     if (_healthFullSyncing) return;
     _healthFullSyncing = true;
     var H = (Cap.Plugins && Cap.Plugins.HealthFull) ||
             (typeof Cap.registerPlugin === 'function' ? Cap.registerPlugin('HealthFull') : null);
+    // DEBUG stadio 2
+    _hkToast('② plugin HealthFull=' + (H?'trovato':'NULL') + ' · Plugins.HealthFull=' + (Cap.Plugins&&Cap.Plugins.HealthFull?'si':'no'), '#1a3a5a');
     if (!H) { _healthFullSyncing = false; return; }
     var avail = await H.isAvailable();
+    // DEBUG stadio 3
+    _hkToast('③ isAvailable=' + JSON.stringify(avail), '#1a3a5a');
     if (!avail || !avail.available) { _healthFullSyncing = false; return; }
+    _hkToast('④ chiedo permessi Salute...', '#1a3a5a');
 
     // Tipi da richiedere — tutto ciò che il plugin supporta
     var cumQ  = ['steps','distance','flightsClimbed','activeCalories','basalCalories','water','dietaryEnergy'];
