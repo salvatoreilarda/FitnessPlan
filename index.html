@@ -2,8 +2,8 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Fitness Plan v7.8</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Fitness Plan v7.10</title>
 <meta name="app-version" content="6.7">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <style>
@@ -58,7 +58,7 @@ body {
 .header {
   background: var(--surface);
   border-bottom: 1px solid var(--border);
-  padding: 14px 16px 12px;
+  padding: calc(14px + env(safe-area-inset-top)) 16px 12px;
   position: sticky;
   top: 0;
   z-index: 100;
@@ -3580,6 +3580,10 @@ document.addEventListener('DOMContentLoaded', function() {
   initBenessere();
   renderEquip();
 
+  // Apple Salute (solo su app nativa iOS) — legge i passi e popola dailySteps
+  syncHealthKit();
+  document.addEventListener('visibilitychange', function(){ if (!document.hidden) syncHealthKit(); });
+
   // Cloud sync: check link collegamento (#sync=...)
   _cloudSyncCheckHash();
   // Carica dal cloud all'avvio (se cambia qualcosa → reload automatico)
@@ -3713,6 +3717,48 @@ function renderStepsStorico() {
     row.appendChild(right);
     el.appendChild(row);
   });
+}
+
+// ════ APPLE SALUTE (HealthKit via Capacitor) ════
+var _healthSyncing = false;
+async function syncHealthKit() {
+  try {
+    var Cap = window.Capacitor;
+    // Solo dentro l'app nativa; nel browser non fa nulla
+    if (!Cap || (typeof Cap.isNativePlatform === 'function' && !Cap.isNativePlatform())) return;
+    if (_healthSyncing) return;
+    _healthSyncing = true;
+    var H = (Cap.Plugins && Cap.Plugins.HealthPlugin) ||
+            (typeof Cap.registerPlugin === 'function' ? Cap.registerPlugin('HealthPlugin') : null);
+    if (!H) { _healthSyncing = false; return; }
+    var avail = await H.isHealthAvailable();
+    if (!avail || !avail.available) { _healthSyncing = false; return; }
+    await H.requestHealthPermissions({ permissions: ['READ_STEPS'] });
+    var end = new Date();
+    var start = new Date(); start.setDate(start.getDate() - 6); start.setHours(0,0,0,0);
+    var res = await H.queryAggregated({
+      startDate: start.toISOString(),
+      endDate: end.toISOString(),
+      dataType: 'steps',
+      bucket: 'day'
+    });
+    var daily = JSON.parse(localStorage.getItem('dailySteps') || '[]');
+    (res && res.aggregatedData ? res.aggregatedData : []).forEach(function(s){
+      var d = (s.startDate || '').split('T')[0];
+      if (!d) return;
+      var val = Math.round(s.value || 0);
+      var existing = daily.find(function(x){ return x.date === d; });
+      if (existing) existing.steps = val; else daily.push({ date: d, steps: val });
+    });
+    localStorage.setItem('dailySteps', JSON.stringify(daily));
+    if (typeof renderHomeHero === 'function') renderHomeHero();
+    if (typeof renderStepsWidget === 'function') renderStepsWidget();
+    if (typeof renderScorecard === 'function') renderScorecard();
+  } catch (e) {
+    console.log('HealthKit sync error:', e);
+  } finally {
+    _healthSyncing = false;
+  }
 }
 
 function renderHomeHero() {
@@ -5893,7 +5939,8 @@ function _aiGetConfig() {
     return { provider:'openai', url:'https://api.openai.com/v1/chat/completions', key:localStorage.getItem('openai_api_key')||'', model:model, label:'OpenAI · '+model };
   }
   if (provider === 'gemini') {
-    var gmodel = localStorage.getItem('gemini_model') || 'gemini-1.5-flash';
+    var gmodel = localStorage.getItem('gemini_model') || 'gemini-2.5-flash';
+    if (gmodel.indexOf('1.5') !== -1) { gmodel = 'gemini-2.5-flash'; localStorage.setItem('gemini_model', gmodel); }
     return { provider:'gemini', url:'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', key:localStorage.getItem('gemini_api_key')||'', model:gmodel, label:'Gemini · '+gmodel };
   }
   return { provider:'groq', url:'https://api.groq.com/openai/v1/chat/completions', key:localStorage.getItem('groq_api_key')||'', model:'llama-3.3-70b-versatile', label:'Groq · LLaMA 3.3' };
@@ -6015,53 +6062,28 @@ function renderSettingsState() {
   var theme    = localStorage.getItem('theme') || 'dark';
   var keyMap   = { groq:'groq_api_key', gemini:'gemini_api_key', openai:'openai_api_key' };
   var phMap    = { groq:'gsk_xxxxxxxxxxxxxxxx', gemini:'AIzaSy...', openai:'sk-proj-...' };
+  var nameMap  = { groq:'🟢 Groq', gemini:'🔵 Gemini', openai:'🤖 OpenAI' };
+  var helpMap  = { groq:'https://console.groq.com/keys', gemini:'https://aistudio.google.com/apikey', openai:'https://platform.openai.com/api-keys' };
 
-  // API keys sections: status badge + placeholder
-  ['groq','gemini','openai'].forEach(function(p) {
-    var k = localStorage.getItem(keyMap[p]) || '';
-    var st = document.getElementById('s-' + p + '-status');
-    if (st) st.innerHTML = k ? '<span style="color:var(--green);font-size:11px;font-weight:600;">✓ Configurata</span>' : '<span style="color:var(--muted);font-size:11px;">Non impostata</span>';
-    var inp = document.getElementById('s-' + p + '-key');
-    if (inp) { inp.value = ''; inp.placeholder = k ? '••••••••••••••••' : phMap[p]; }
-  });
-
-  // Provider selection cards
+  // Provider selection cards: evidenzia il selezionato
   ['groq','gemini','openai'].forEach(function(p) {
     var card = document.getElementById('s-card-' + p);
     if (!card) return;
-    var hasKey = !!localStorage.getItem(keyMap[p]);
-    card.style.borderColor = provider === p ? 'var(--accent)' : 'var(--border)';
-    card.style.opacity     = hasKey ? '1' : '0.38';
-    card.style.cursor      = hasKey ? 'pointer' : 'not-allowed';
+    var selected = provider === p;
+    card.style.borderColor = selected ? 'var(--accent)' : 'var(--border)';
+    card.style.background   = selected ? 'var(--surface2)' : 'transparent';
   });
 
-  // Model pickers visibility
-  var mgem = document.getElementById('s-model-gemini');
-  var moai = document.getElementById('s-model-openai');
-  if (mgem) mgem.style.display = provider === 'gemini' ? 'block' : 'none';
-  if (moai) moai.style.display = provider === 'openai' ? 'block' : 'none';
-
-  // Gemini model buttons
-  var gemModel = localStorage.getItem('gemini_model') || 'gemini-1.5-flash';
-  [['s-mg-flash','gemini-1.5-flash'],['s-mg-pro','gemini-1.5-pro']].forEach(function(pair) {
-    var btn = document.getElementById(pair[0]);
-    if (!btn) return;
-    var active = gemModel === pair[1];
-    btn.style.background   = active ? 'var(--accent)' : 'var(--surface)';
-    btn.style.color        = active ? '#fff'           : 'var(--text)';
-    btn.style.borderColor  = active ? 'var(--accent)'  : 'var(--border)';
-  });
-
-  // OpenAI model buttons
-  var oaiModel = localStorage.getItem('openai_model') || 'gpt-4o-mini';
-  [['s-mo-mini','gpt-4o-mini'],['s-mo-4o','gpt-4o']].forEach(function(pair) {
-    var btn = document.getElementById(pair[0]);
-    if (!btn) return;
-    var active = oaiModel === pair[1];
-    btn.style.background   = active ? 'var(--accent)' : 'var(--surface)';
-    btn.style.color        = active ? '#fff'           : 'var(--text)';
-    btn.style.borderColor  = active ? 'var(--accent)'  : 'var(--border)';
-  });
+  // Box chiave: solo per il provider selezionato
+  var k = localStorage.getItem(keyMap[provider]) || '';
+  var title = document.getElementById('s-ai-keytitle');
+  if (title) title.textContent = 'Chiave ' + nameMap[provider];
+  var stEl = document.getElementById('s-ai-status');
+  if (stEl) stEl.innerHTML = k ? '<span style="color:var(--green);font-size:11px;font-weight:600;">✓ Configurata</span>' : '<span style="color:var(--muted);font-size:11px;">Non impostata</span>';
+  var inp = document.getElementById('s-ai-key');
+  if (inp) { inp.value = ''; inp.placeholder = k ? '••••••••••••••••' : phMap[provider]; }
+  var help = document.getElementById('s-ai-help');
+  if (help) help.href = helpMap[provider];
 
   // Theme buttons
   var thD = document.getElementById('settings-theme-dark');
@@ -6071,8 +6093,6 @@ function renderSettingsState() {
 }
 
 function selectAiProvider(provider) {
-  var keyMap = { groq:'groq_api_key', gemini:'gemini_api_key', openai:'openai_api_key' };
-  if (!localStorage.getItem(keyMap[provider])) return; // nessuna key, card disabilitata
   localStorage.setItem('ai_provider', provider);
   renderSettingsState();
   initAiChat();
@@ -6080,13 +6100,13 @@ function selectAiProvider(provider) {
 }
 
 function saveSettingsKey(provider) {
-  var inp = document.getElementById('s-' + provider + '-key');
+  provider = provider || localStorage.getItem('ai_provider') || 'gemini';
+  var inp = document.getElementById('s-ai-key');
   if (!inp || !inp.value.trim()) { alert('Inserisci la API key'); return; }
   var keyMap = { groq:'groq_api_key', gemini:'gemini_api_key', openai:'openai_api_key' };
   localStorage.setItem(keyMap[provider], inp.value.trim());
   localStorage.setItem('ai_provider', provider);
-  // Reset modello Gemini a versione stabile ad ogni nuovo salvataggio chiave
-  if (provider === 'gemini') localStorage.setItem('gemini_model', 'gemini-1.5-flash');
+  if (provider === 'gemini') localStorage.setItem('gemini_model', 'gemini-2.5-flash');
   inp.value = '';
   renderSettingsState();
   initAiChat();
@@ -9199,12 +9219,12 @@ async function stimaKcalFoto() {
         <div id="s-card-groq" onclick="selectAiProvider('groq')" style="border-radius:12px;padding:12px 6px;border:2px solid var(--border);text-align:center;cursor:pointer;touch-action:manipulation;">
           <div style="font-size:20px;margin-bottom:4px;">🟢</div>
           <div style="font-weight:700;font-size:12px;color:var(--text);">Groq</div>
-          <div style="font-size:10px;color:var(--green);">Gratuito</div>
+          <div style="font-size:10px;color:var(--muted);">Gratis · limitato</div>
         </div>
         <div id="s-card-gemini" onclick="selectAiProvider('gemini')" style="border-radius:12px;padding:12px 6px;border:2px solid var(--border);text-align:center;cursor:pointer;touch-action:manipulation;">
           <div style="font-size:20px;margin-bottom:4px;">🔵</div>
           <div style="font-weight:700;font-size:12px;color:var(--text);">Gemini</div>
-          <div style="font-size:10px;color:var(--green);">Gratuito</div>
+          <div style="font-size:10px;color:var(--green);">Consigliato</div>
         </div>
         <div id="s-card-openai" onclick="selectAiProvider('openai')" style="border-radius:12px;padding:12px 6px;border:2px solid var(--border);text-align:center;cursor:pointer;touch-action:manipulation;">
           <div style="font-size:20px;margin-bottom:4px;">🤖</div>
@@ -9213,55 +9233,21 @@ async function stimaKcalFoto() {
         </div>
       </div>
 
-      <!-- API Keys -->
-      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px;">
-        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-            <span style="font-size:12px;font-weight:700;color:var(--text);">🟢 Groq <span style="font-weight:400;font-size:10px;color:var(--green);">Gratuito</span></span>
-            <div id="s-groq-status"></div>
-          </div>
-          <div style="display:flex;gap:8px;">
-            <input type="password" id="s-groq-key" placeholder="gsk_xxxxxxxxxxxxxxxx" autocomplete="off" style="flex:1;min-width:0;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 10px;font-size:12px;font-family:monospace;outline:none;">
-            <button onclick="saveSettingsKey('groq')" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer;touch-action:manipulation;">Salva</button>
-          </div>
+      <!-- API key (solo del provider selezionato) -->
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:8px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <span id="s-ai-keytitle" style="font-size:12px;font-weight:700;color:var(--text);">Chiave API</span>
+          <div id="s-ai-status"></div>
         </div>
-        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-            <span style="font-size:12px;font-weight:700;color:var(--text);">🔵 Gemini <span style="font-weight:400;font-size:10px;color:var(--green);">Gratuito</span></span>
-            <div id="s-gemini-status"></div>
-          </div>
-          <div style="display:flex;gap:8px;">
-            <input type="password" id="s-gemini-key" placeholder="AIzaSy..." autocomplete="off" style="flex:1;min-width:0;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 10px;font-size:12px;font-family:monospace;outline:none;">
-            <button onclick="saveSettingsKey('gemini')" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer;touch-action:manipulation;">Salva</button>
-          </div>
+        <div style="display:flex;gap:8px;">
+          <input type="password" id="s-ai-key" placeholder="..." autocomplete="off" style="flex:1;min-width:0;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 10px;font-size:12px;font-family:monospace;outline:none;">
+          <button onclick="saveSettingsKey()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer;touch-action:manipulation;">Salva</button>
         </div>
-        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-            <span style="font-size:12px;font-weight:700;color:var(--text);">🤖 OpenAI <span style="font-weight:400;font-size:10px;color:var(--muted);">A pagamento</span></span>
-            <div id="s-openai-status"></div>
-          </div>
-          <div style="display:flex;gap:8px;">
-            <input type="password" id="s-openai-key" placeholder="sk-proj-..." autocomplete="off" style="flex:1;min-width:0;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 10px;font-size:12px;font-family:monospace;outline:none;">
-            <button onclick="saveSettingsKey('openai')" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer;touch-action:manipulation;">Salva</button>
-          </div>
-        </div>
+        <a id="s-ai-help" href="#" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;font-size:11px;color:var(--accent);">Come ottengo la chiave? ↗</a>
       </div>
 
-      <!-- Model pickers -->
-      <div id="s-model-gemini" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:4px;">
-        <div style="font-size:11px;color:var(--muted);letter-spacing:0.8px;font-weight:700;margin-bottom:8px;">MODELLO GEMINI</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-          <button id="s-mg-flash" onclick="selectModel('gemini','gemini-1.5-flash')" style="border-radius:8px;padding:9px 6px;font-size:11px;font-weight:600;cursor:pointer;touch-action:manipulation;border:2px solid var(--border);background:var(--surface);color:var(--text);line-height:1.4;">gemini-1.5-flash<br><span style="font-weight:400;font-size:10px;color:var(--muted);">Veloce</span></button>
-          <button id="s-mg-pro" onclick="selectModel('gemini','gemini-1.5-pro')" style="border-radius:8px;padding:9px 6px;font-size:11px;font-weight:600;cursor:pointer;touch-action:manipulation;border:2px solid var(--border);background:var(--surface);color:var(--text);line-height:1.4;">gemini-1.5-pro<br><span style="font-weight:400;font-size:10px;color:var(--muted);">Potente</span></button>
-        </div>
-      </div>
-      <div id="s-model-openai" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:4px;">
-        <div style="font-size:11px;color:var(--muted);letter-spacing:0.8px;font-weight:700;margin-bottom:8px;">MODELLO OPENAI</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-          <button id="s-mo-mini" onclick="selectModel('openai','gpt-4o-mini')" style="border-radius:8px;padding:9px 6px;font-size:11px;font-weight:600;cursor:pointer;touch-action:manipulation;border:2px solid var(--border);background:var(--surface);color:var(--text);line-height:1.4;">gpt-4o-mini<br><span style="font-weight:400;font-size:10px;color:var(--muted);">Economico</span></button>
-          <button id="s-mo-4o" onclick="selectModel('openai','gpt-4o')" style="border-radius:8px;padding:9px 6px;font-size:11px;font-weight:600;cursor:pointer;touch-action:manipulation;border:2px solid var(--border);background:var(--surface);color:var(--text);line-height:1.4;">gpt-4o<br><span style="font-weight:400;font-size:10px;color:var(--muted);">Potente</span></button>
-        </div>
-      </div>
+      <!-- Modelli gestiti automaticamente (Gemini 2.5 Flash / Groq LLaMA 3.3 / GPT-4o-mini) -->
+
 
       <!-- Chat -->
       <button onclick="aiNewChat();closeSettings();" style="margin-top:10px;width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--muted);border-radius:10px;padding:11px;font-size:12px;cursor:pointer;touch-action:manipulation;">🗑️ Nuova conversazione con Federico</button>
@@ -9274,7 +9260,7 @@ async function stimaKcalFoto() {
       </div>
 
       <!-- Versione -->
-      <div style="margin-top:28px;text-align:center;font-size:11px;color:var(--muted);opacity:0.4;">Fitness Plan · v7.8</div>
+      <div style="margin-top:28px;text-align:center;font-size:11px;color:var(--muted);opacity:0.4;">Fitness Plan · v7.10</div>
 
     </div>
   </div>
