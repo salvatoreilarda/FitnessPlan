@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Fitness Plan v7.14</title>
+<title>Fitness Plan v7.15</title>
 <meta name="app-version" content="6.7">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <style>
@@ -3787,25 +3787,26 @@ function _hkToast(msg, color) {
   setTimeout(function(){ t.remove(); }, 8000);
 }
 
+// Chiama il plugin nativo HealthFull anche da pagina remota (no registerPlugin):
+// usa l'API di basso livello del ponte Capacitor, nativePromise.
+function _hkCall(method, options) {
+  var Cap = window.Capacitor;
+  if (Cap && typeof Cap.nativePromise === 'function') return Cap.nativePromise('HealthFull', method, options || {});
+  // Fallback: proxy classico (app con @capacitor/core locale)
+  var H = (Cap && Cap.Plugins && Cap.Plugins.HealthFull) ||
+          (Cap && typeof Cap.registerPlugin === 'function' ? Cap.registerPlugin('HealthFull') : null);
+  if (H && typeof H[method] === 'function') return H[method](options || {});
+  return Promise.reject(new Error('Ponte Capacitor non disponibile'));
+}
+
 async function syncHealthFull() {
   try {
     var Cap = window.Capacitor;
-    // DEBUG stadio 1
-    var nat = (Cap && typeof Cap.isNativePlatform === 'function') ? Cap.isNativePlatform() : 'n/a';
-    _hkToast('① Cap=' + (Cap?'SI':'NO') + ' · native=' + nat, '#1a3a5a');
     if (!Cap || (typeof Cap.isNativePlatform === 'function' && !Cap.isNativePlatform())) return;
     if (_healthFullSyncing) return;
     _healthFullSyncing = true;
-    var H = (Cap.Plugins && Cap.Plugins.HealthFull) ||
-            (typeof Cap.registerPlugin === 'function' ? Cap.registerPlugin('HealthFull') : null);
-    // DEBUG stadio 2
-    _hkToast('② plugin HealthFull=' + (H?'trovato':'NULL') + ' · Plugins.HealthFull=' + (Cap.Plugins&&Cap.Plugins.HealthFull?'si':'no'), '#1a3a5a');
-    if (!H) { _healthFullSyncing = false; return; }
-    var avail = await H.isAvailable();
-    // DEBUG stadio 3
-    _hkToast('③ isAvailable=' + JSON.stringify(avail), '#1a3a5a');
-    if (!avail || !avail.available) { _healthFullSyncing = false; return; }
-    _hkToast('④ chiedo permessi Salute...', '#1a3a5a');
+    var avail = await _hkCall('isAvailable');
+    if (!avail || !avail.available) { _hkToast('⚠️ HealthKit non disponibile', '#4a1010'); _healthFullSyncing = false; return; }
 
     // Tipi da richiedere — tutto ciò che il plugin supporta
     var cumQ  = ['steps','distance','flightsClimbed','activeCalories','basalCalories','water','dietaryEnergy'];
@@ -3816,7 +3817,7 @@ async function syncHealthFull() {
     var catT  = ['sleep','sexualActivity','mindfulness'];
     var allTypes = cumQ.concat(latQ).concat(catT);
 
-    await H.requestAuthorization({ types: allTypes });
+    await _hkCall('requestAuthorization', { types: allTypes });
 
     var iso = function(d){ return d.toISOString(); };
     var end = new Date();
@@ -3828,7 +3829,7 @@ async function syncHealthFull() {
 
     // ── PASSI (serie 7 giorni → dailySteps, riusa grafica esistente) ──
     try {
-      var rSteps = await H.queryAggregated({ dataType:'steps', startDate:iso(start7), endDate:iso(end) });
+      var rSteps = await _hkCall('queryAggregated', { dataType:'steps', startDate:iso(start7), endDate:iso(end) });
       var daily = JSON.parse(localStorage.getItem('dailySteps') || '[]');
       (rSteps.data||[]).forEach(function(s){
         var d = localDateStr(new Date(s.startDate));
@@ -3847,7 +3848,7 @@ async function syncHealthFull() {
     }
     for (var k=1; k<cumQ.length; k++) {
       try {
-        var rc = await H.queryAggregated({ dataType:cumQ[k], startDate:iso(start7), endDate:iso(end) });
+        var rc = await _hkCall('queryAggregated', { dataType:cumQ[k], startDate:iso(start7), endDate:iso(end) });
         activity[cumQ[k]] = (rc.data||[]).map(function(s){ return { date:localDateStr(new Date(s.startDate)), value:Math.round((s.value||0)*10)/10 }; });
       } catch(e){}
     }
@@ -3856,7 +3857,7 @@ async function syncHealthFull() {
     // ── Valori "latest" (peso, battiti, ecc.) → healthVitals ──
     for (var li=0; li<latQ.length; li++) {
       try {
-        var rl = await H.queryLatest({ dataType: latQ[li] });
+        var rl = await _hkCall('queryLatest', { dataType: latQ[li] });
         if (rl && rl.value !== null && rl.value !== undefined && !(rl.value instanceof Object)) {
           vitals[latQ[li]] = { value: Math.round(rl.value*10)/10, date: rl.date, unit: rl.unit||'' };
         }
@@ -3878,7 +3879,7 @@ async function syncHealthFull() {
 
     // ── SONNO (ultime notti) → benessere_<data>.sonno (ore) ──
     try {
-      var rSleep = await H.queryCategory({ dataType:'sleep', startDate:iso(start7), endDate:iso(end) });
+      var rSleep = await _hkCall('queryCategory', { dataType:'sleep', startDate:iso(start7), endDate:iso(end) });
       // value: 0=inBed 1=asleep 2=awake (HKCategoryValueSleepAnalysis classico)
       // iOS16+: 0 inBed,1 asleepUnspecified,2 awake,3 core,4 deep,5 rem
       var perNight = {};
@@ -3898,7 +3899,7 @@ async function syncHealthFull() {
 
     // ── ATTIVITÀ SESSUALE (conteggio 30gg) → healthSexual ──
     try {
-      var rSex = await H.queryCategory({ dataType:'sexualActivity', startDate:iso(start30), endDate:iso(end) });
+      var rSex = await _hkCall('queryCategory', { dataType:'sexualActivity', startDate:iso(start30), endDate:iso(end) });
       localStorage.setItem('healthSexual', JSON.stringify({
         count30: (rSex.data||[]).length,
         last: (rSex.data||[]).length ? rSex.data[rSex.data.length-1].startDate : null
