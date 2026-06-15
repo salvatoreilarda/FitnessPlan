@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Fitness Plan v7.15</title>
+<title>Fitness Plan v7.16</title>
 <meta name="app-version" content="6.7">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <style>
@@ -3789,7 +3789,7 @@ function _hkToast(msg, color) {
 
 // Chiama il plugin nativo HealthFull anche da pagina remota (no registerPlugin):
 // usa l'API di basso livello del ponte Capacitor, nativePromise.
-function _hkCall(method, options) {
+function _hkCallRaw(method, options) {
   var Cap = window.Capacitor;
   if (Cap && typeof Cap.nativePromise === 'function') return Cap.nativePromise('HealthFull', method, options || {});
   // Fallback: proxy classico (app con @capacitor/core locale)
@@ -3798,14 +3798,24 @@ function _hkCall(method, options) {
   if (H && typeof H[method] === 'function') return H[method](options || {});
   return Promise.reject(new Error('Ponte Capacitor non disponibile'));
 }
+// Versione con timeout: se il nativo non risponde entro 4s, rifiuta (così non resta appeso)
+function _hkCall(method, options) {
+  return Promise.race([
+    _hkCallRaw(method, options),
+    new Promise(function(_, rej){ setTimeout(function(){ rej(new Error('TIMEOUT '+method+' (nativo non risponde)')); }, 4000); })
+  ]);
+}
 
 async function syncHealthFull() {
   try {
     var Cap = window.Capacitor;
+    // DEBUG avvio: conferma che il codice nuovo gira + stato del ponte
+    _hkToast('▶ v7.16 sync · nativePromise=' + (Cap && typeof Cap.nativePromise) + ' · native=' + (Cap && Cap.isNativePlatform && Cap.isNativePlatform()), '#1a3a5a');
     if (!Cap || (typeof Cap.isNativePlatform === 'function' && !Cap.isNativePlatform())) return;
     if (_healthFullSyncing) return;
     _healthFullSyncing = true;
     var avail = await _hkCall('isAvailable');
+    _hkToast('isAvailable → ' + JSON.stringify(avail), '#1a3a5a');
     if (!avail || !avail.available) { _hkToast('⚠️ HealthKit non disponibile', '#4a1010'); _healthFullSyncing = false; return; }
 
     // Tipi da richiedere — tutto ciò che il plugin supporta
