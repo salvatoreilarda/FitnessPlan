@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Fitness Plan v7.18</title>
+<title>Fitness Plan v7.19</title>
 <meta name="app-version" content="6.7">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <style>
@@ -660,6 +660,33 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
 .bottom-nav button.active {
   color: var(--accent);
   border-top-color: var(--accent);
+}
+/* Segmented control stile Apple (Allenamento, Diario) */
+.seg-ctrl {
+  display: flex;
+  background: var(--surface2);
+  border-radius: 10px;
+  padding: 3px;
+  gap: 3px;
+  margin-bottom: 18px;
+}
+.seg-ctrl button {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 4px;
+  border-radius: 8px;
+  cursor: pointer;
+  touch-action: manipulation;
+  font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  transition: background .15s, color .15s;
+}
+.seg-ctrl button.active {
+  background: var(--accent);
+  color: #fff;
 }
 body { padding-bottom: 72px; }
 .content { padding: 14px; }
@@ -1416,6 +1443,11 @@ body.light-mode .header-streak { background: var(--orange) !important; }
 <!-- CIRCUITO -->
 <div class="tab" id="tab-circuito">
 
+  <div class="seg-ctrl">
+    <button data-w="boxe" onclick="showWorkout('boxe')">Boxe</button>
+    <button data-w="sala" onclick="showWorkout('sala')">Palestra</button>
+    <button data-w="circuito" class="active" onclick="showWorkout('circuito')">Stretching</button>
+  </div>
 
   <div class="timer-widget">
     <div class="timer-label">⏱ Timer circuito serale</div>
@@ -1576,6 +1608,12 @@ body.light-mode .header-streak { background: var(--orange) !important; }
 <!-- PUGILATO -->
 <div class="tab" id="tab-boxe">
 
+  <div class="seg-ctrl">
+    <button data-w="boxe" class="active" onclick="showWorkout('boxe')">Boxe</button>
+    <button data-w="sala" onclick="showWorkout('sala')">Palestra</button>
+    <button data-w="circuito" onclick="showWorkout('circuito')">Stretching</button>
+  </div>
+
   <div class="sl">Palestra</div>
   <div class="info-table">
     <div class="info-row"><span class="info-key">Nome</span><span class="info-val">Shogun — Via Oreto Vecchia, Palermo</span></div>
@@ -1605,6 +1643,12 @@ body.light-mode .header-streak { background: var(--orange) !important; }
 
 <!-- SALA ATTREZZI -->
 <div class="tab" id="tab-sala">
+
+  <div class="seg-ctrl">
+    <button data-w="boxe" onclick="showWorkout('boxe')">Boxe</button>
+    <button data-w="sala" class="active" onclick="showWorkout('sala')">Palestra</button>
+    <button data-w="circuito" onclick="showWorkout('circuito')">Stretching</button>
+  </div>
 
   <div class="session-stopwatch" id="sw-sala">
     <div>
@@ -2964,7 +3008,7 @@ body.light-mode .header-streak { background: var(--orange) !important; }
 
 // ════ TAB NAVIGATION ════
 function _updateHeaderTitle(id) {
-  var titles = {overview:'Fitness Plan',boxe:'Sport',circuito:'Stretching',sala:'Sala pesi',equip:'Attrezzatura',ai:'AI',fasi:'Programma',alim:'Alimentazione',profilo:'Profilo',benessere:'Benessere'};
+  var titles = {overview:'Fitness Plan',allenamento:'Allenamento',diario:'Diario',boxe:'Allenamento',circuito:'Allenamento',sala:'Allenamento',equip:'Attrezzatura',ai:'Coach',coach:'Coach',fasi:'Programma',alim:'Alimentazione',profilo:'Profilo',benessere:'Benessere'};
   var el = document.getElementById('header-name');
   if (el) el.textContent = titles[id] || 'Fitness Plan';
 }
@@ -3003,10 +3047,43 @@ function _switchTab(id) {
   if (el) el.classList.add('active');
 }
 
+// ════ NAV 4 TAB (Home · Allenamento · Diario · Coach) ════
+// Allenamento: router con segmented control sui tab esistenti boxe/sala/circuito
+function showWorkout(which) {
+  _switchTab(which);
+  _updateHeaderTitle('allenamento');
+  if (which === 'circuito') renderStretchCalInline();
+  if (which === 'sala' && typeof renderSala === 'function') renderSala();
+  // evidenzia il segmented in tutte le sue copie
+  document.querySelectorAll('.seg-ctrl button[data-w]').forEach(function(b){
+    b.classList.toggle('active', b.dataset.w === which);
+  });
+  // evidenzia la nav Allenamento
+  document.querySelectorAll('.bottom-nav button').forEach(function(b){
+    b.classList.toggle('active', b.dataset.tab === 'allenamento');
+  });
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Diario: hub che raccoglie le metriche salute + sezioni (per ora link)
+function showDiario(btn) {
+  _switchTab('diario');
+  _updateHeaderTitle('diario');
+  if (typeof renderDiario === 'function') renderDiario();
+  document.querySelectorAll('.bottom-nav button').forEach(function(b){
+    b.classList.toggle('active', b.dataset.tab === 'diario');
+  });
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 function _syncBottomNav(id) {
-  var _fitnessIds = ['boxe','circuito','sala','equip'];
-  var _moreIds = ['fasi','alim','profilo','benessere'];
-  var navId = _fitnessIds.includes(id) ? 'fitness' : _moreIds.includes(id) ? 'more' : id;
+  var _allenIds = ['boxe','circuito','sala'];
+  var _diarioIds = ['diario','benessere','alim','equip','fasi','profilo','stats'];
+  var navId = _allenIds.includes(id) ? 'allenamento'
+            : id === 'overview' ? 'overview'
+            : id === 'ai' ? 'ai'
+            : _diarioIds.includes(id) ? 'diario'
+            : id;
   document.querySelectorAll('.bottom-nav button').forEach(b => {
     b.classList.toggle('active', b.dataset.tab === navId);
   });
@@ -3807,7 +3884,7 @@ async function syncHealthFull() {
   try {
     var Cap = window.Capacitor;
     // DEBUG avvio: conferma che il codice nuovo gira + stato del ponte
-    _hkToast('v7.17 sync · nativePromise=' + (Cap && typeof Cap.nativePromise) + ' · native=' + (Cap && Cap.isNativePlatform && Cap.isNativePlatform()), '#1a3a5a');
+    _hkToast('sync · nativePromise=' + (Cap && typeof Cap.nativePromise) + ' · native=' + (Cap && Cap.isNativePlatform && Cap.isNativePlatform()), '#1a3a5a');
     if (!Cap || (typeof Cap.isNativePlatform === 'function' && !Cap.isNativePlatform())) return;
     if (_healthFullSyncing) return;
     _healthFullSyncing = true;
@@ -3975,6 +4052,48 @@ function renderHomeHero() {
       '<div class="stat-tile green"><div class="tile-val">' + sessioni + '</div><div class="tile-lbl">sessioni / sett</div></div>' +
       '<div class="stat-tile orange"><div class="tile-val">' + peso + '</div><div class="tile-lbl">peso</div></div>' +
       '<div class="stat-tile blue"><div class="tile-val">' + sonno + '</div><div class="tile-lbl">sonno</div></div>' +
+    '</div>';
+}
+
+// ════ DIARIO — metriche salute aggregate (stile Apple Health) ════
+function renderDiario() {
+  var el = document.getElementById('diario-inject');
+  if (!el) return;
+  var today = localDateStr(new Date());
+  var d = new Date();
+  var giorni = ['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
+  var mesi = ['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
+  var dataLbl = giorni[d.getDay()] + ' ' + d.getDate() + ' ' + mesi[d.getMonth()];
+
+  var steps = JSON.parse(localStorage.getItem('dailySteps') || '[]');
+  var todaySteps = (steps.find(function(s){ return s.date === today; }) || {}).steps;
+  var pesoList = JSON.parse(localStorage.getItem('peso_corporeo') || '[]');
+  var ultimoPeso = pesoList.length ? pesoList[pesoList.length-1].kg : null;
+  var ben = JSON.parse(localStorage.getItem('benessere_' + today) || '{}');
+  var vitals = JSON.parse(localStorage.getItem('healthVitals') || '{}');
+
+  function tile(icon, label, val, sub) {
+    return '<div style="background:var(--card);border:1px solid var(--border);border-radius:18px;padding:16px;">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;"><span style="font-size:16px;">' + icon + '</span>' +
+      '<span style="font-size:12px;color:var(--muted);font-weight:600;">' + label + '</span></div>' +
+      '<div style="font-size:24px;font-weight:700;color:var(--text);line-height:1;">' + (val != null && val !== '' ? val : '—') + '</div>' +
+      (sub ? '<div style="font-size:11px;color:var(--muted);margin-top:4px;">' + sub + '</div>' : '') +
+      '</div>';
+  }
+
+  var energiaTxt = ben.energia ? ['','😴 1/5','😕 2/5','😐 3/5','😊 4/5','🔥 5/5'][ben.energia] : null;
+
+  el.innerHTML =
+    '<div style="font-size:13px;color:var(--muted);font-weight:600;margin-bottom:14px;">' + dataLbl + '</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
+      tile('⚖️', 'Peso', ultimoPeso != null ? ultimoPeso + ' kg' : null, null) +
+      tile('👟', 'Passi', todaySteps != null ? todaySteps.toLocaleString('it') : null, todaySteps != null ? '/ 8.000' : null) +
+      tile('😴', 'Sonno', ben.sonno != null ? ben.sonno + 'h' : null, null) +
+      tile('⚡', 'Energia', energiaTxt, null) +
+      tile('🦵', 'Ginocchio', ben.ginocchio != null ? ben.ginocchio + '/5' : null, null) +
+      tile('💪', 'Spalla', ben.spalla != null ? ben.spalla + '/5' : null, null) +
+      (vitals.heartRate ? tile('❤️', 'Battiti', vitals.heartRate.value + ' bpm', null) : '') +
+      (vitals.oxygenSaturation ? tile('🫁', 'Ossigenazione', vitals.oxygenSaturation.value + '%', null) : '') +
     '</div>';
 }
 
@@ -9336,19 +9455,34 @@ async function stimaKcalFoto() {
 
 </script>
 
+<!-- ═══ DIARIO ═══ -->
+<div class="tab" id="tab-diario" style="padding:14px 14px 100px;">
+  <div id="diario-inject"></div>
+
+  <div style="font-size:11px;color:var(--muted);letter-spacing:1px;font-weight:700;margin:24px 0 10px;">ALTRO</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+    <button onclick="showTab('alim',null);_syncBottomNav('alim');" style="display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;color:var(--text);font-size:13px;font-weight:600;cursor:pointer;touch-action:manipulation;"><i class="ti ti-salad" style="font-size:20px;color:var(--accent);"></i>Alimentazione</button>
+    <button onclick="showTab('benessere',null);_syncBottomNav('benessere');" style="display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;color:var(--text);font-size:13px;font-weight:600;cursor:pointer;touch-action:manipulation;"><i class="ti ti-heart-rate-monitor" style="font-size:20px;color:var(--accent);"></i>Benessere</button>
+    <button onclick="showTab('fasi',null);_syncBottomNav('fasi');" style="display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;color:var(--text);font-size:13px;font-weight:600;cursor:pointer;touch-action:manipulation;"><i class="ti ti-chart-line" style="font-size:20px;color:var(--accent);"></i>Programma</button>
+    <button onclick="showTab('profilo',null);_syncBottomNav('profilo');" style="display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;color:var(--text);font-size:13px;font-weight:600;cursor:pointer;touch-action:manipulation;"><i class="ti ti-user" style="font-size:20px;color:var(--accent);"></i>Profilo</button>
+    <button onclick="showTab('equip',null);_syncBottomNav('equip');" style="display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;color:var(--text);font-size:13px;font-weight:600;cursor:pointer;touch-action:manipulation;"><i class="ti ti-backpack" style="font-size:20px;color:var(--accent);"></i>Attrezzatura</button>
+    <button onclick="showTabAll('stats',null);_syncBottomNav('stats');" style="display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;color:var(--text);font-size:13px;font-weight:600;cursor:pointer;touch-action:manipulation;"><i class="ti ti-chart-bar" style="font-size:20px;color:var(--accent);"></i>Statistiche</button>
+  </div>
+</div>
+
 <nav class="bottom-nav">
   <div class="bottom-nav-inner">
     <button class="active" onclick="showTabAll('overview',this)" data-tab="overview">
       <i class="ti ti-home"></i>Home
     </button>
-    <button onclick="_openFitnessMenu(this)" data-tab="fitness">
-      <i class="ti ti-barbell"></i>Fitness
+    <button onclick="showWorkout('boxe')" data-tab="allenamento">
+      <i class="ti ti-barbell"></i>Allenamento
+    </button>
+    <button onclick="showDiario(this)" data-tab="diario">
+      <i class="ti ti-book"></i>Diario
     </button>
     <button onclick="showTab('ai',this)" data-tab="ai">
-      <i class="ti ti-robot"></i>AI
-    </button>
-    <button onclick="_openMoreMenu(this)" data-tab="more">
-      <i class="ti ti-dots"></i>Altro
+      <i class="ti ti-robot"></i>Coach
     </button>
   </div>
 </nav>
