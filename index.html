@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Fitness Plan v7.19</title>
+<title>Fitness Plan v7.20</title>
 <meta name="app-version" content="6.7">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <style>
@@ -1104,17 +1104,28 @@ body.light-mode .header-streak { background: var(--orange) !important; }
 <!-- OVERVIEW -->
 <div class="tab active" id="tab-overview">
 
-  <!-- Hero card passi — popolata da renderHomeHero() -->
-  <div id="home-hero-inject" style="margin-bottom:10px;"></div>
+  <!-- ── PROGRESSO PROGRAMMA ── -->
+  <div id="home-prog-inject" style="margin-bottom:20px;"></div>
 
-  <div class="today-banner" id="todayBanner">
-    <div class="today-icon" id="todayIcon">⏳</div>
+  <!-- ── OGGI ── -->
+  <div style="font-size:11px;color:var(--muted);letter-spacing:1.2px;font-weight:700;margin:0 0 10px;">OGGI</div>
+  <div class="today-banner" id="todayBanner" style="border-radius:18px;border:1px solid var(--border);background:var(--card);padding:16px;display:flex;align-items:center;gap:14px;margin:0 0 20px;">
+    <div class="today-icon" id="todayIcon" style="font-size:34px;line-height:1;">⏳</div>
     <div>
-      <div class="today-label">Oggi</div>
-      <div class="today-name" id="todayName">Caricamento...</div>
-      <div id="todayTime" style="font-family:-apple-system, BlinkMacSystemFont, system-ui,monospace;font-size:10px;color:var(--muted);margin-top:3px;letter-spacing:1px;"></div>
+      <div class="today-name" id="todayName" style="font-size:21px;font-weight:700;color:var(--text);line-height:1.1;">Caricamento...</div>
+      <div id="todaySub" style="font-size:13px;color:var(--muted);margin-top:3px;"></div>
+      <div id="todayTime" style="font-size:13px;color:var(--muted);margin-top:2px;"></div>
     </div>
   </div>
+
+  <!-- ── 4 STAT TILES ── -->
+  <div id="home-tiles-inject" style="margin-bottom:20px;"></div>
+
+  <!-- ── OBIETTIVO DEL GIORNO ── -->
+  <div id="home-goal-inject" style="margin-bottom:8px;"></div>
+
+  <!-- nascosto: hero vecchio (mantenuto per compatibilità renderHomeHero) -->
+  <div id="home-hero-inject" style="display:none;"></div>
 
   <!-- ── SCORECARD GIORNALIERA ── -->
   <div class="home-section" data-id="scorecard">
@@ -3031,6 +3042,7 @@ function showTab(id, btn) {
 function showTabAll(id, btn) {
   _switchTab(id);
   _updateHeaderTitle(id);
+  if (id === 'overview' && typeof renderHome === 'function') renderHome();
   if (id === 'fasi') renderFasiHub();
   if (id === 'circuito') renderStretchCalInline();
   document.querySelectorAll('.nav-grid button').forEach(b => {
@@ -3646,6 +3658,8 @@ document.addEventListener('DOMContentLoaded', function() {
   renderStretchingState();
   initStepsDate();
   renderHomeHero();
+  _relocateLegacyHome();
+  renderHome();
   renderStepsWidget();
   renderStats();
   initProfile();
@@ -4095,6 +4109,115 @@ function renderDiario() {
       (vitals.heartRate ? tile('❤️', 'Battiti', vitals.heartRate.value + ' bpm', null) : '') +
       (vitals.oxygenSaturation ? tile('🫁', 'Ossigenazione', vitals.oxygenSaturation.value + '%', null) : '') +
     '</div>';
+}
+
+// ════ HOME — layout stile mockup (progresso, OGGI, 4 tile, obiettivo) ════
+function renderHome() {
+  var today = localDateStr(new Date());
+
+  // ── Barra progresso programma ──
+  var progEl = document.getElementById('home-prog-inject');
+  if (progEl) {
+    var w = Math.max(1, Math.min(12, parseInt(localStorage.getItem('sop_week') || '1')));
+    var faseNome = w <= 4 ? 'Sbloccare' : w <= 8 ? 'Ricostruire' : 'Libertà';
+    var faseNum = w <= 4 ? 1 : w <= 8 ? 2 : 3;
+    var pct = Math.round((w / 12) * 100);
+    progEl.innerHTML =
+      '<div onclick="showTab(\'fasi\',null);_syncBottomNav(\'fasi\');" style="background:var(--card);border:1px solid var(--border);border-radius:18px;padding:16px;cursor:pointer;-webkit-tap-highlight-color:transparent;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;">' +
+          '<span style="font-size:14px;font-weight:600;color:var(--text);">Settimana ' + w + ' · Fase ' + faseNum + ' ' + faseNome + '</span>' +
+          '<span style="font-size:14px;font-weight:700;color:var(--accent);">' + pct + '%</span>' +
+        '</div>' +
+        '<div style="height:8px;background:var(--surface2);border-radius:4px;overflow:hidden;">' +
+          '<div style="height:100%;width:' + pct + '%;background:var(--accent);border-radius:4px;"></div>' +
+        '</div>' +
+        '<div style="font-size:12px;color:var(--muted);margin-top:8px;">' + w + ' di 12 settimane</div>' +
+      '</div>';
+  }
+
+  // ── Card OGGI: stile neutro come mockup (bordo soft, nome bianco) ──
+  var tb = document.getElementById('todayBanner');
+  if (tb) { tb.style.borderColor = 'var(--border)'; tb.style.opacity = '1'; }
+  var tnEl = document.getElementById('todayName');
+  if (tnEl) tnEl.style.color = 'var(--text)';
+  var subEl = document.getElementById('todaySub');
+  if (subEl) {
+    var nm = (tnEl || {}).textContent || '';
+    if (/Boxe/i.test(nm)) subEl.textContent = 'Shogun Boxing';
+    else if (/Sala/i.test(nm)) subEl.textContent = 'Sala attrezzi';
+    else if (/Riposo/i.test(nm)) subEl.textContent = 'Giorno di recupero';
+    else subEl.textContent = '';
+  }
+
+  // ── 4 stat tiles ──
+  var tilesEl = document.getElementById('home-tiles-inject');
+  if (tilesEl) {
+    var steps = JSON.parse(localStorage.getItem('dailySteps') || '[]');
+    var passi = (steps.find(function(s){ return s.date === today; }) || {}).steps;
+    var pasti = JSON.parse(localStorage.getItem('pasti_' + today) || '{}');
+    var nPasti = ['colazione','pranzo','cena','spuntini'].filter(function(k){ return pasti[k]; }).length;
+    var ben = JSON.parse(localStorage.getItem('benessere_' + today) || '{}');
+
+    function ht(icon, color, label, val, sub) {
+      return '<div style="background:var(--card);border:1px solid var(--border);border-radius:18px;padding:16px;">' +
+        '<div style="display:flex;align-items:center;gap:9px;margin-bottom:10px;">' +
+          '<span style="font-size:20px;line-height:1;">' + icon + '</span>' +
+          '<span style="font-size:13px;color:var(--muted);font-weight:600;">' + label + '</span>' +
+        '</div>' +
+        '<div style="font-size:22px;font-weight:700;color:var(--text);line-height:1;">' + (val != null && val !== '' ? val : '—') +
+          (sub ? '<span style="font-size:12px;color:var(--muted);font-weight:500;"> ' + sub + '</span>' : '') +
+        '</div></div>';
+    }
+    tilesEl.innerHTML =
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
+        ht('🏃', '', 'Passi', passi != null ? passi.toLocaleString('it') : null, passi != null ? '/ 8.000' : null) +
+        ht('🍽️', '', 'Pasti', nPasti, '/ 4') +
+        ht('⚡', '', 'Energia', ben.energia != null ? ben.energia : null, ben.energia != null ? '/ 5' : null) +
+        ht('🌙', '', 'Sonno', ben.sonno != null ? ben.sonno + 'h' : null, null) +
+      '</div>';
+  }
+
+  // ── Obiettivo del giorno (ring passi) ──
+  var goalEl = document.getElementById('home-goal-inject');
+  if (goalEl) {
+    var steps2 = JSON.parse(localStorage.getItem('dailySteps') || '[]');
+    var cnt = (steps2.find(function(s){ return s.date === today; }) || {}).steps || 0;
+    var goal = 8000;
+    var mancano = Math.max(0, goal - cnt);
+    var pctG = Math.min(100, Math.round((cnt / goal) * 100));
+    var R = 26, C = 2 * Math.PI * R;
+    var dash = (pctG / 100) * C;
+    var ringTxt = mancano > 0 ? 'Mancano ' + mancano.toLocaleString('it') + ' passi' : 'Obiettivo raggiunto!';
+    goalEl.innerHTML =
+      '<div style="background:var(--card);border:1px solid var(--border);border-radius:18px;padding:18px;display:flex;align-items:center;justify-content:space-between;gap:14px;">' +
+        '<div>' +
+          '<div style="font-size:13px;color:var(--muted);margin-bottom:4px;">Obiettivo del giorno</div>' +
+          '<div style="font-size:18px;font-weight:700;color:var(--text);line-height:1.2;">' + ringTxt + '</div>' +
+          (mancano > 0 ? '<div style="font-size:13px;color:var(--muted);margin-top:2px;">per raggiungere il tuo goal.</div>' : '') +
+        '</div>' +
+        '<svg width="68" height="68" viewBox="0 0 68 68" style="flex-shrink:0;transform:rotate(-90deg);">' +
+          '<circle cx="34" cy="34" r="' + R + '" fill="none" stroke="var(--surface2)" stroke-width="7"/>' +
+          '<circle cx="34" cy="34" r="' + R + '" fill="none" stroke="var(--accent)" stroke-width="7" stroke-linecap="round" stroke-dasharray="' + dash + ' ' + C + '"/>' +
+        '</svg>' +
+      '</div>';
+  }
+}
+
+// Sposta nel Diario le sezioni funzionali della vecchia Home; nasconde le ridondanti.
+function _relocateLegacyHome() {
+  var diario = document.getElementById('tab-diario');
+  if (!diario || diario.dataset.legacyMoved === '1') return;
+  ['settimana','circuito-q','passi','obiettivi'].forEach(function(id){
+    var n = document.querySelector('#tab-overview .home-section[data-id="' + id + '"]');
+    if (n) diario.appendChild(n);
+  });
+  ['scorecard','benessere-oggi','recenti'].forEach(function(id){
+    var n = document.querySelector('#tab-overview .home-section[data-id="' + id + '"]');
+    if (n) n.style.display = 'none';
+  });
+  var eb = document.getElementById('home-edit-btn');
+  if (eb && eb.parentElement) eb.parentElement.style.display = 'none';
+  diario.dataset.legacyMoved = '1';
 }
 
 function renderStepsWidget() {
