@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Fitness Plan v7.20</title>
+<title>Fitness Plan v7.21</title>
 <meta name="app-version" content="6.7">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <style>
@@ -4112,6 +4112,7 @@ function renderDiario() {
 }
 
 // ════ HOME — layout stile mockup (progresso, OGGI, 4 tile, obiettivo) ════
+function _fmtNum(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
 function renderHome() {
   var today = localDateStr(new Date());
 
@@ -4120,12 +4121,11 @@ function renderHome() {
   if (progEl) {
     var w = Math.max(1, Math.min(12, parseInt(localStorage.getItem('sop_week') || '1')));
     var faseNome = w <= 4 ? 'Sbloccare' : w <= 8 ? 'Ricostruire' : 'Libertà';
-    var faseNum = w <= 4 ? 1 : w <= 8 ? 2 : 3;
     var pct = Math.round((w / 12) * 100);
     progEl.innerHTML =
       '<div onclick="showTab(\'fasi\',null);_syncBottomNav(\'fasi\');" style="background:var(--card);border:1px solid var(--border);border-radius:18px;padding:16px;cursor:pointer;-webkit-tap-highlight-color:transparent;">' +
         '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;">' +
-          '<span style="font-size:14px;font-weight:600;color:var(--text);">Settimana ' + w + ' · Fase ' + faseNum + ' ' + faseNome + '</span>' +
+          '<span style="font-size:14px;font-weight:600;color:var(--text);">Settimana ' + w + ' · Fase ' + faseNome + '</span>' +
           '<span style="font-size:14px;font-weight:700;color:var(--accent);">' + pct + '%</span>' +
         '</div>' +
         '<div style="height:8px;background:var(--surface2);border-radius:4px;overflow:hidden;">' +
@@ -4144,7 +4144,7 @@ function renderHome() {
   if (subEl) {
     var nm = (tnEl || {}).textContent || '';
     if (/Boxe/i.test(nm)) subEl.textContent = 'Shogun Boxing';
-    else if (/Sala/i.test(nm)) subEl.textContent = 'Sala attrezzi';
+    else if (/Sala/i.test(nm)) subEl.textContent = 'Shogun · sala pesi';
     else if (/Riposo/i.test(nm)) subEl.textContent = 'Giorno di recupero';
     else subEl.textContent = '';
   }
@@ -4158,10 +4158,10 @@ function renderHome() {
     var nPasti = ['colazione','pranzo','cena','spuntini'].filter(function(k){ return pasti[k]; }).length;
     var ben = JSON.parse(localStorage.getItem('benessere_' + today) || '{}');
 
-    function ht(icon, color, label, val, sub) {
+    function ht(iconClass, color, label, val, sub) {
       return '<div style="background:var(--card);border:1px solid var(--border);border-radius:18px;padding:16px;">' +
         '<div style="display:flex;align-items:center;gap:9px;margin-bottom:10px;">' +
-          '<span style="font-size:20px;line-height:1;">' + icon + '</span>' +
+          '<i class="ti ' + iconClass + '" style="font-size:20px;line-height:1;color:' + color + ';"></i>' +
           '<span style="font-size:13px;color:var(--muted);font-weight:600;">' + label + '</span>' +
         '</div>' +
         '<div style="font-size:22px;font-weight:700;color:var(--text);line-height:1;">' + (val != null && val !== '' ? val : '—') +
@@ -4170,10 +4170,10 @@ function renderHome() {
     }
     tilesEl.innerHTML =
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
-        ht('🏃', '', 'Passi', passi != null ? passi.toLocaleString('it') : null, passi != null ? '/ 8.000' : null) +
-        ht('🍽️', '', 'Pasti', nPasti, '/ 4') +
-        ht('⚡', '', 'Energia', ben.energia != null ? ben.energia : null, ben.energia != null ? '/ 5' : null) +
-        ht('🌙', '', 'Sonno', ben.sonno != null ? ben.sonno + 'h' : null, null) +
+        ht('ti-walk', '#30d158', 'Passi', passi != null ? _fmtNum(passi) : null, passi != null ? '/ 8.000' : null) +
+        ht('ti-tools-kitchen-2', '#ff9f0a', 'Pasti', nPasti, '/ 4') +
+        ht('ti-bolt', '#ffd60a', 'Energia', ben.energia != null ? ben.energia : null, ben.energia != null ? '/ 5' : null) +
+        ht('ti-moon', '#bf5af0', 'Sonno', ben.sonno != null ? ben.sonno + 'h' : null, null) +
       '</div>';
   }
 
@@ -4187,7 +4187,7 @@ function renderHome() {
     var pctG = Math.min(100, Math.round((cnt / goal) * 100));
     var R = 26, C = 2 * Math.PI * R;
     var dash = (pctG / 100) * C;
-    var ringTxt = mancano > 0 ? 'Mancano ' + mancano.toLocaleString('it') + ' passi' : 'Obiettivo raggiunto!';
+    var ringTxt = mancano > 0 ? 'Mancano ' + _fmtNum(mancano) + ' passi' : 'Obiettivo raggiunto!';
     goalEl.innerHTML =
       '<div style="background:var(--card);border:1px solid var(--border);border-radius:18px;padding:18px;display:flex;align-items:center;justify-content:space-between;gap:14px;">' +
         '<div>' +
